@@ -2,8 +2,7 @@
 ## Project: Fix & Solve ("Spot the bugs, Solve the logics")
 
 **Version:** 1.0  
-**Date:** February 28, 2026  
-**Status:** Draft
+**Date:** February 28, 2026
 
 ---
 
@@ -36,7 +35,7 @@ The system will be hosted on a central server within the college’s Local Area 
 
 ### Target Users
 * **Primary:** 2nd-year college students.
-* **Proficiency:** Proficient in C, C++, or Python.
+* **Proficiency:** Proficient in C, C++, Java or Python.
 
 ### Objectives of the Event
 * Evaluate students' ability to identify and rectify syntax and logical errors in pre-written code.
