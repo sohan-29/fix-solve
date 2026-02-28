@@ -1,19 +1,35 @@
 const express = require("express");
-const cors = require("cors");
-const dotenv = require("dotenv");
-const connectDB = require("./config/db");
-
-dotenv.config();
-connectDB();
+const mongoose = require("mongoose");
+const submissionRoutes = require("./routes/submissionRoutes");
+const problemRoutes = require("./routes/problemRoutes");
+const userRoutes = require("./routes/userRoutes");
+const contestRoutes = require("./routes/contestRoutes");
+require("dotenv").config();
 
 const app = express();
-app.use(cors());
 app.use(express.json());
 
-// Routes
-app.use("/api/users", require("./routes/userRoutes"));
-app.use("/api/contest", require("./routes/contestRoutes"));
-app.use("/api/submissions", require("./routes/submissionRoutes"));
+// MongoDB connection
+if (!process.env.MONGO_URI) {
+  console.error('MongoDB URI not set. Please define MONGO_URI in your environment or .env file.');
+} else {
+  mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log('MongoDB connected'))
+    .catch(err => console.error('MongoDB connection error:', err));
+}
 
-const PORT = process.env.PORT || 5000;
+// Routes
+app.use("/api/submissions", submissionRoutes);
+app.use("/api/problems", problemRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/contests", contestRoutes);
+
+const PORT = process.env.PORT || 3000;
+
+// basic error handler
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(500).json({ message: err.message || 'Internal Server Error' });
+});
+
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

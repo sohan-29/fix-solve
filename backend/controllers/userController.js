@@ -13,3 +13,12 @@ exports.registerUser = async (req, res) => {
     res.status(500).json({ error: "User registration failed" });
   }
 };
+
+exports.getUsers = async (req, res) => {
+  try {
+    const users = await User.find().sort({ totalTime: 1 });
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch users" });
+  }
+};
