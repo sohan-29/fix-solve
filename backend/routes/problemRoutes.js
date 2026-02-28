@@ -1,10 +1,14 @@
 const express = require('express');
-const { createProblem, getProblems } = require('../controllers/problemController');
-const { protect } = require('../middleware/authMiddleware');
+const { createProblem, getProblems, getProblemByRound, getProblemById } = require('../controllers/problemController');
 
 const router = express.Router();
 
-router.post('/', protect, createProblem);
+// Public routes
 router.get('/', getProblems);
+router.get('/round/:round', getProblemByRound);
+router.get('/:id', getProblemById);
+
+// Allow creating problems without auth for demo purposes
+router.post('/', createProblem);
 
 module.exports = router;

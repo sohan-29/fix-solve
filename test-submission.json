@@ -1,0 +1,1 @@
+{"problemId": "69a32e8ccf4e52903dbf2d73", "code": "function add(a, b) {\n  return a + b;\n}", "language": "javascript"}
