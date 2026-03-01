@@ -1,98 +1,98 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 
 export default function RoundCompletion() {
-  const navigate = useNavigate();
   const location = useLocation();
-  const [timeLeft, setTimeLeft] = useState(10);
+  const navigate = useNavigate();
+  const [countdown, setCountdown] = useState(10);
   
-  const { 
-    roundNumber = 1, 
-    timeTaken = 0, 
-    mistakes = 0, 
-    penalty = 0 
-  } = location.state || {};
+  const { timeTaken, mistakes, penalty, round } = location.state || {};
+  const isRound1 = round === 1 || round === undefined;
+
+  useEffect(() => {
+    if (isRound1) {
+      const timer = setTimeout(() => {
+        navigate('/round2');
+      }, 10000);
+      
+      const countdownInterval = setInterval(() => {
+        setCountdown(prev => prev - 1);
+      }, 1000);
+      
+      return () => {
+        clearTimeout(timer);
+        clearInterval(countdownInterval);
+      };
+    }
+  }, [navigate, isRound1]);
 
   const formatTime = (seconds) => {
+    if (!seconds) return '0:00';
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
-
-  const handleProceed = () => {
-    if (roundNumber === 1) {
-      navigate('/round2');
-    } else {
-      navigate('/results');
-    }
-  };
-
-  const nextRoundInstructions = roundNumber === 1 ? (
-    <div className="next-round-instructions">
-      <h3>About Round 2</h3>
-      <ul>
-        <li><strong>Coding Challenge:</strong> Write code from scratch to solve the problem</li>
-        <li><strong>Time Limit:</strong> 2 minutes</li>
-        <li><strong>Scoring:</strong> Based on time taken + penalties</li>
-        <li><strong>Tip:</strong> Read the problem carefully before writing code</li>
-        <li><strong>Penalty:</strong> Each wrong submission adds 5 seconds to your time</li>
-      </ul>
-    </div>
-  ) : (
-    <div className="next-round-instructions">
-      <h3>Contest Complete!</h3>
-      <ul>
-        <li>Thank you for participating!</li>
-        <li>View the leaderboard to see your ranking</li>
-        <li>Results are sorted by total time (lower is better)</li>
-      </ul>
-    </div>
-  );
-
   return (
     <div className="completion-page">
       <div className="completion-container">
-        <div className="completion-icon">🎉</div>
-        <h1>Round {roundNumber} Complete!</h1>
+        <div className="completion-icon">
+          {isRound1 ? '✓' : '🏆'}
+        </div>
+        
+        <h1>
+          {isRound1 ? 'Round 1 Complete!' : 'Contest Complete!'}
+        </h1>
         
         <div className="completion-stats">
           <div className="stat-item">
             <span className="stat-label">Time Taken</span>
             <span className="stat-value">{formatTime(timeTaken)}</span>
           </div>
+          
           <div className="stat-item">
-            <span className="stat-label">Wrong Submissions</span>
-            <span className="stat-value penalty">{mistakes}</span>
+            <span className="stat-label">Mistakes</span>
+            <span className="stat-value">{mistakes || 0}</span>
           </div>
+          
           <div className="stat-item">
             <span className="stat-label">Penalty</span>
-            <span className="stat-value penalty">+{penalty}s</span>
+            <span className="stat-value penalty">+{penalty || 0}s</span>
           </div>
         </div>
-
-        {nextRoundInstructions}
-
+        
+        {isRound1 && (
+          <div className="next-round-instructions">
+            <h3>Round 2 Instructions:</h3>
+            <ul>
+              <li>Solve the problem from scratch</li>
+              <li>Write efficient code considering time complexity</li>
+              <li>Your code will be tested against hidden test cases</li>
+              <li>Each wrong submission adds 5 second penalty</li>
+            </ul>
+          </div>
+        )}
+        
         <div className="completion-actions">
-          <button className="next-round-btn" onClick={handleProceed}>
-            {roundNumber === 1 ? 'Start Round 2 →' : 'View Results →'}
-          </button>
-          <p style={{ marginTop: '10px', color: '#666', fontSize: '0.9em' }}>
-            Auto-redirect in {timeLeft} seconds...
-          </p>
+          {isRound1 ? (
+            <>
+              <p style={{ marginBottom: '15px', color: '#666', fontSize: '12px' }}>
+                Starting Round 2 in {countdown} seconds...
+              </p>
+              <button className="next-round-btn" onClick={() => navigate('/round2')}>
+                Start Round 2 Now
+              </button>
+            </>
+          ) : (
+            <>
+              <p style={{ marginBottom: '15px', color: '#666', fontSize: '12px' }}>
+                View final rankings
+              </p>
+              <Link to="/results" className="next-round-btn" style={{ display: 'inline-block', textDecoration: 'none' }}>
+                View Results
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -9,7 +9,6 @@ export default function Results() {
   useEffect(() => {
     axios.get('/api/users')
       .then(res => {
-        // Sort users by total time (lower is better)
         const sortedUsers = res.data.sort((a, b) => (a.totalTime || 0) - (b.totalTime || 0));
         setUsers(sortedUsers);
         setLoading(false);
@@ -28,46 +27,39 @@ export default function Results() {
   };
 
   return (
-    <div className="completion-page">
-      <div className="completion-container" style={{ maxWidth: '800px' }}>
-        <div className="completion-icon">🏆</div>
+    <div className="results-page">
+      <div className="results-container">
         <h1>Contest Results</h1>
         
         {loading ? (
           <p>Loading results...</p>
         ) : (
           <>
-            <p style={{ marginBottom: '20px', color: '#666' }}>
-              Rankings are based on total time (lower is better)
-            </p>
+            <p>Rankings based on total time (lower is better)</p>
             
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
+            <table className="results-table">
               <thead>
-                <tr style={{ background: '#f8f9fa' }}>
-                  <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #6C5CE7' }}>Rank</th>
-                  <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #6C5CE7' }}>Name</th>
-                  <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #6C5CE7' }}>Round 1</th>
-                  <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #6C5CE7' }}>Round 2</th>
-                  <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid #6C5CE7' }}>Total Time</th>
+                <tr>
+                  <th>Rank</th>
+                  <th>Name</th>
+                  <th>Round 1</th>
+                  <th>Round 2</th>
+                  <th>Total</th>
                 </tr>
               </thead>
               <tbody>
                 {users.map((u, index) => (
                   <tr 
                     key={u._id} 
-                    style={{ 
-                      background: index === 0 ? '#fff3cd' : index === 1 ? '#f8f9fa' : index === 2 ? '#ffeaa7' : 'white'
-                    }}
+                    className={index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : ''}
                   >
-                    <td style={{ padding: '12px', borderBottom: '1px solid #ddd' }}>
-                      {index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `#${index + 1}`}
+                    <td className="rank">
+                      {index === 0 ? '1st' : index === 1 ? '2nd' : index === 2 ? '3rd' : `${index + 1}th`}
                     </td>
-                    <td style={{ padding: '12px', borderBottom: '1px solid #ddd', fontWeight: 'bold' }}>{u.name}</td>
-                    <td style={{ padding: '12px', borderBottom: '1px solid #ddd' }}>{formatTime(u.round1Time)}</td>
-                    <td style={{ padding: '12px', borderBottom: '1px solid #ddd' }}>{formatTime(u.round2Time)}</td>
-                    <td style={{ padding: '12px', borderBottom: '1px solid #ddd', fontWeight: 'bold', color: '#6C5CE7' }}>
-                      {formatTime(u.totalTime)}
-                    </td>
+                    <td>{u.name}</td>
+                    <td>{formatTime(u.round1Time)}</td>
+                    <td>{formatTime(u.round2Time)}</td>
+                    <td>{formatTime(u.totalTime)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -79,11 +71,9 @@ export default function Results() {
           </>
         )}
         
-        <div style={{ marginTop: '30px' }}>
-          <Link to="/" style={{ color: '#6C5CE7', textDecoration: 'none' }}>
-            Back to Home
-          </Link>
-        </div>
+        <Link to="/" className="back-link">
+          Back to Home
+        </Link>
       </div>
     </div>
   );

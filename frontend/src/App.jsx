@@ -16,7 +16,7 @@ function App() {
         <Route path="/instructions" element={<Instructions />} />
         <Route path="/round1" element={<Round1 />} />
         <Route path="/round2" element={<Round2 />} />
-        <Route path="/round-completion" element={<RoundCompletion />} />
+        <Route path="/round-complete" element={<RoundCompletion />} />
         <Route path="/results" element={<Results />} />
         <Route path="/admin" element={<Admin />} />
       </Routes>

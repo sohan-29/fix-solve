@@ -7,8 +7,8 @@ export default function Round2() {
   const [problem, setProblem] = useState(null);
   const [mistakes, setMistakes] = useState(0);
   const [startTime, setStartTime] = useState(null);
-  const [elapsedTime, setElapsedTime] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [elapsedTime, setElapsedTime] = useState(0);
   const [showTestCases, setShowTestCases] = useState(false);
   const navigate = useNavigate();
 
@@ -36,20 +36,13 @@ function factorial(n) {
 
   // Timer effect
   useEffect(() => {
-    if (!startTime || loading) return;
-    
-    const timer = setInterval(() => {
-      setElapsedTime((Date.now() - startTime) / 1000);
-    }, 100);
-
-    return () => clearInterval(timer);
-  }, [startTime, loading]);
-
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+    if (!loading && startTime) {
+      const timer = setInterval(() => {
+        setElapsedTime(((Date.now() - startTime) / 1000).toFixed(1));
+      }, 100);
+      return () => clearInterval(timer);
+    }
+  }, [loading, startTime]);
 
   const handleSubmit = async () => {
     try {
@@ -70,16 +63,15 @@ function factorial(n) {
         const elapsed = (Date.now() - startTime) / 1000;
         const penalty = mistakes * 5;
         const total = elapsed + penalty;
-        
         await axios.post('/api/contests/end', { name: userName, round: 2, timeTaken: total });
         
         // Navigate to completion page with stats
-        navigate('/round-completion', {
+        navigate('/round-complete', {
           state: {
-            roundNumber: 2,
             timeTaken: elapsed,
-            mistakes: mistakes,
-            penalty: penalty
+            mistakes,
+            penalty,
+            round: 2
           }
         });
       } else {
@@ -107,109 +99,84 @@ function factorial(n) {
   return (
     <div className="round-page">
       <div className="round-header">
-        <div className="round-title">
-          <h2>Round 2 - Solve the Problem</h2>
-        </div>
-        <div className="round-timer">
-          <span className="timer-label">Time:</span>
-          <span className="timer-value">{formatTime(elapsedTime)}</span>
-        </div>
-        <div className="round-stats">
-          <span className="mistakes-count">Mistakes: {mistakes}</span>
-          <span className="penalty-info">Penalty: +{mistakes * 5}s</span>
+        <h2>Round 2 - Solve the Problem</h2>
+        <div className="timer">
+          Time: {elapsedTime}s | Mistakes: {mistakes}
         </div>
       </div>
       
-      <div className="round-content">
+      {problem && (
         <div className="problem-description">
-          {problem && (
-            <>
-              <h3>{problem.title}</h3>
-              <p>{problem.description}</p>
-              
-              {problem.inputFormat && (
-                <p><strong>Input Format:</strong> {problem.inputFormat}</p>
-              )}
-              
-              {problem.outputFormat && (
-                <p><strong>Output Format:</strong> {problem.outputFormat}</p>
-              )}
-              
-              {problem.constraints && (
-                <p><strong>Constraints:</strong> {problem.constraints}</p>
-              )}
-              
-              {problem.sampleInput && (
-                <div>
-                  <strong>Sample Input:</strong>
-                  <pre style={{ background: '#f4f4f4', padding: '10px' }}>{problem.sampleInput}</pre>
+          <h3>{problem.title}</h3>
+          <p>{problem.description}</p>
+          
+          {problem.inputFormat && (
+            <p><strong>Input Format:</strong> {problem.inputFormat}</p>
+          )}
+          
+          {problem.outputFormat && (
+            <p><strong>Output Format:</strong> {problem.outputFormat}</p>
+          )}
+          
+          {problem.constraints && (
+            <p><strong>Constraints:</strong> {problem.constraints}</p>
+          )}
+          
+          {problem.sampleInput && (
+            <div>
+              <strong>Sample Input:</strong>
+              <pre style={{ background: '#f4f4f4', padding: '10px' }}>{problem.sampleInput}</pre>
+            </div>
+          )}
+          
+          {problem.sampleOutput && (
+            <div>
+              <strong>Sample Output:</strong>
+              <pre style={{ background: '#f4f4f4', padding: '10px' }}>{problem.sampleOutput}</pre>
+            </div>
+          )}
+          
+          {problem.testCases && problem.testCases.length > 0 && (
+            <button 
+              onClick={() => setShowTestCases(!showTestCases)}
+              style={{ marginTop: '10px' }}
+            >
+              {showTestCases ? 'Hide' : 'Show'} Test Cases
+            </button>
+          )}
+          
+          {showTestCases && problem.testCases && (
+            <div style={{ marginTop: '10px' }}>
+              <h4>Test Cases:</h4>
+              {problem.testCases.map((tc, i) => (
+                <div key={i} style={{ marginBottom: '10px', border: '1px solid #ddd', padding: '10px' }}>
+                  <strong>Test Case {i + 1}:</strong>
+                  <br />
+                  Input: <pre style={{ display: 'inline' }}>{tc.input}</pre>
+                  <br />
+                  Output: <pre style={{ display: 'inline' }}>{tc.output}</pre>
                 </div>
-              )}
-              
-              {problem.sampleOutput && (
-                <div>
-                  <strong>Sample Output:</strong>
-                  <pre style={{ background: '#f4f4f4', padding: '10px' }}>{problem.sampleOutput}</pre>
-                </div>
-              )}
-              
-              {problem.timeLimit && (
-                <p><strong>Time Limit:</strong> {problem.timeLimit}s</p>
-              )}
-              
-              {problem.difficulty && (
-                <p><strong>Difficulty:</strong> {problem.difficulty}</p>
-              )}
-              
-              {problem.complexity && (
-                <p><strong>Expected Complexity:</strong> {problem.complexity}</p>
-              )}
-              
-              {problem.testCases && problem.testCases.length > 0 && (
-                <button 
-                  onClick={() => setShowTestCases(!showTestCases)}
-                  style={{ marginTop: '10px' }}
-                >
-                  {showTestCases ? 'Hide' : 'Show'} Test Cases
-                </button>
-              )}
-              
-              {showTestCases && problem.testCases && (
-                <div style={{ marginTop: '10px' }}>
-                  <h4>Test Cases:</h4>
-                  {problem.testCases.map((tc, i) => (
-                    <div key={i} style={{ marginBottom: '10px', border: '1px solid #ddd', padding: '10px' }}>
-                      <strong>Test Case {i + 1}:</strong>
-                      <br />
-                      Input: <pre style={{ display: 'inline' }}>{tc.input}</pre>
-                      <br />
-                      Output: <pre style={{ display: 'inline' }}>{tc.output}</pre>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
+              ))}
+            </div>
           )}
         </div>
-        
-        <div>
-          <textarea
-            rows={20}
-            cols={60}
-            value={code}
-            onChange={e => setCode(e.target.value)}
-            style={{ fontFamily: 'monospace', width: '100%', marginTop: '10px' }}
-          />
-          
-          <div style={{ marginTop: '10px' }}>
-            <button onClick={handleSubmit} style={{ marginRight: '10px' }}>
-              Submit
-            </button>
-            <button onClick={() => setCode(problem?.starterCode || '')}>
-              Reset Code
-            </button>
-          </div>
-        </div>
+      )}
+      
+      <textarea
+        rows={15}
+        cols={60}
+        value={code}
+        onChange={e => setCode(e.target.value)}
+        style={{ fontFamily: 'monospace', width: '100%', marginTop: '10px' }}
+      />
+      
+      <div style={{ marginTop: '10px' }}>
+        <button onClick={handleSubmit} style={{ marginRight: '10px' }}>
+          Submit
+        </button>
+        <button onClick={() => setCode(problem?.starterCode || '')}>
+          Reset Code
+        </button>
       </div>
     </div>
   );

@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react';
 import axios from '../api';
 
+const ADMIN_PASSWORD = 'admin123';
+
 export default function Admin() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('problems');
   const [problems, setProblems] = useState([]);
   const [submissions, setSubmissions] = useState([]);
@@ -27,9 +32,21 @@ export default function Admin() {
     hiddenTestCases: [{ input: '', output: '' }]
   });
 
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (password === ADMIN_PASSWORD) {
+      setIsAuthenticated(true);
+      setError('');
+    } else {
+      setError('Invalid password');
+    }
+  };
+
   useEffect(() => {
-    fetchData();
-  }, [activeTab]);
+    if (isAuthenticated) {
+      fetchData();
+    }
+  }, [activeTab, isAuthenticated]);
 
   const fetchData = async () => {
     try {
@@ -142,6 +159,29 @@ export default function Admin() {
       hiddenTestCases: [{ input: '', output: '' }]
     });
   };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="admin-login">
+        <div className="login-box">
+          <h1>Admin Login</h1>
+          <form onSubmit={handleLogin}>
+            <div className="form-row">
+              <label>Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter admin password"
+              />
+            </div>
+            {error && <p className="login-error">{error}</p>}
+            <button type="submit">Login</button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="admin-page">

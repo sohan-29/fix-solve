@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import axios from '../api';
 
 export default function Home() {
@@ -24,20 +24,18 @@ export default function Home() {
 
   return (
     <div className="container">
-      <h1>Fix & Solve Competition</h1>
+      <h1>Fix & Solve</h1>
       <label>
-        Enter your unique id (name):
-        <input value={name} onChange={e => setName(e.target.value)} />
+        Enter your unique id:
+        <input 
+          value={name} 
+          onChange={e => setName(e.target.value)} 
+          placeholder="Your name or ID"
+        />
       </label>
       <button disabled={!name} onClick={() => setShowPopup(true)}>
         Start Contest
       </button>
-      
-      <div style={{ marginTop: '20px' }}>
-        <Link to="/admin" style={{ color: '#6C5CE7', textDecoration: 'none' }}>
-          Admin Panel
-        </Link>
-      </div>
 
       {showPopup && (
         <div className="modal">
