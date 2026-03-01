@@ -36,6 +36,9 @@ export default function Results() {
         ) : (
           <>
             <p>Rankings based on total time (lower is better)</p>
+            <p style={{ color: '#ff6b6b', fontSize: '12px' }}>
+              Penalty: +5 seconds per wrong submission
+            </p>
             
             <table className="results-table">
               <thead>

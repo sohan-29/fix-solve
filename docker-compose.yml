@@ -1,0 +1,57 @@
+services:
+  judge0-db:
+    image: postgres:16.2
+    container_name: judge0-db
+    environment:
+      POSTGRES_USER: judge0
+      POSTGRES_PASSWORD: judge0
+      POSTGRES_DB: judge0
+    volumes:
+      - judge0-db-data:/var/lib/postgresql/data
+    networks:
+      - judge0-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U judge0"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  judge0-redis:
+    image: redis:7.2.4
+    container_name: judge0-redis
+    networks:
+      - judge0-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  judge0-api:
+    image: judge0/judge0:latest
+    container_name: judge0-api
+    ports:
+      - "2358:2358"
+    depends_on:
+      judge0-db:
+        condition: service_healthy
+      judge0-redis:
+        condition: service_healthy
+    environment:
+      JUDGE0_DB_ADAPTER: postgresql
+      JUDGE0_DB_HOST: judge0-db
+      JUDGE0_DB_PORT: 5432
+      JUDGE0_DB_USERNAME: judge0
+      JUDGE0_DB_PASSWORD: judge0
+      JUDGE0_DB_NAME: judge0
+      JUDGE0_REDIS_HOST: judge0-redis
+      JUDGE0_REDIS_PORT: 6379
+    networks:
+      - judge0-network
+
+volumes:
+  judge0-db-data:
+
+networks:
+  judge0-network:
+    driver: bridge

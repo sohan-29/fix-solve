@@ -14,4 +14,17 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Delete submission by ID
+router.delete('/:id', async (req, res) => {
+  try {
+    const submission = await Submission.findByIdAndDelete(req.params.id);
+    if (!submission) {
+      return res.status(404).json({ error: 'Submission not found' });
+    }
+    res.json({ message: 'Submission deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

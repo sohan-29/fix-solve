@@ -1,5 +1,14 @@
 const mongoose = require('mongoose');
 
+// Language code mappings for different languages
+const languageCodes = {
+  javascript: 'javascript',
+  c: 'c',
+  cpp: 'cpp',
+  java: 'java',
+  python: 'python'
+};
+
 const problemSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: { type: String, required: true },
@@ -9,14 +18,36 @@ const problemSchema = new mongoose.Schema({
   constraints: String,
   sampleInput: String,
   sampleOutput: String,
+  // Single code fields (for backward compatibility)
   starterCode: { type: String, default: '' }, // Initial code shown to user
   bugCode: { type: String, default: '' }, // Code with bug for Round 1
+  // Multi-language support
+  starterCodeByLanguage: {
+    javascript: { type: String, default: '' },
+    c: { type: String, default: '' },
+    cpp: { type: String, default: '' },
+    java: { type: String, default: '' },
+    python: { type: String, default: '' }
+  },
+  bugCodeByLanguage: {
+    javascript: { type: String, default: '' },
+    c: { type: String, default: '' },
+    cpp: { type: String, default: '' },
+    java: { type: String, default: '' },
+    python: { type: String, default: '' }
+  },
+  // Supported languages for this problem
+  supportedLanguages: {
+    type: [String],
+    default: ['c']
+  },
   testCases: [
     {
       input: String,
       output: String
     }
   ],
+  // Test cases by language (optional - same test cases can work for all)
   hiddenTestCases: [
     {
       input: String,
@@ -30,3 +61,4 @@ const problemSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 module.exports = mongoose.model('Problem', problemSchema);
+module.exports.languageCodes = languageCodes;

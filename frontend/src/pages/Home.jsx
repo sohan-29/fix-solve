@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import axios from '../api';
 
 export default function Home() {
@@ -23,35 +23,42 @@ export default function Home() {
   };
 
   return (
-    <div className="container">
-      <h1>Fix & Solve</h1>
-      <label>
-        Enter your unique id:
+    <div className="home-page">
+      <div className="home-container">
+        <h1>Fix & Solve</h1>
+        <p className="subtitle">Spot the bugs, Solve the logics</p>
+        
+        <label>
+          Enter your unique id:
+        </label>
         <input 
           value={name} 
           onChange={e => setName(e.target.value)} 
           placeholder="Your name or ID"
         />
-      </label>
-      <button disabled={!name} onClick={() => setShowPopup(true)}>
-        Start Contest
-      </button>
+        
+        <button disabled={!name} onClick={() => setShowPopup(true)}>
+          Start Contest
+        </button>
 
-      {showPopup && (
-        <div className="modal">
-          <div className="modal-content">
-            <p>Click OK to read the contest instructions</p>
-            <button
-              onClick={() => {
-                setShowPopup(false);
-                handleStart();
-              }}
-            >
-              OK
-            </button>
+        <Link to="/admin" className="admin-link">Admin Panel</Link>
+
+        {showPopup && (
+          <div className="modal">
+            <div className="modal-content">
+              <p>Click OK to read the contest instructions</p>
+              <button
+                onClick={() => {
+                  setShowPopup(false);
+                  handleStart();
+                }}
+              >
+                OK
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

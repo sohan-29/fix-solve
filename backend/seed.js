@@ -7,18 +7,94 @@ const problems = [
   // Round 1 - Debugging Problem
   {
     title: 'Fix the Sum Function',
-    description: 'The following function should return the sum of two numbers, but it has a bug. Find and fix it!',
+    description: 'The following function should return the sum of two numbers, but it has a bug. Find and fix it! The bug is that it subtracts instead of adding.',
     roundType: 1,
-    inputFormat: 'Two numbers a and b',
+    inputFormat: 'Two numbers a and b on separate lines',
     outputFormat: 'Sum of a and b',
     constraints: 'a, b can be any integers',
-    sampleInput: '5, 3',
+    sampleInput: '5\n3',
     sampleOutput: '8',
     bugCode: `// Fix the bug in this function
+#include <stdio.h>
+
+int add(int a, int b) {
+  // should return sum
+  return a - b;
+}`,
+    bugCodeByLanguage: {
+      javascript: `// Fix the bug in this function
 function add(a, b) {
   // should return sum
   return a - b;
 }`,
+      c: `// Fix the bug in this function
+#include <stdio.h>
+
+int add(int a, int b) {
+  // should return sum
+  return a - b;
+}`,
+      cpp: `// Fix the bug in this function
+#include <iostream>
+using namespace std;
+
+int add(int a, int b) {
+  // should return sum
+  return a - b;
+}`,
+      java: `// Fix the bug in this function
+public class Solution {
+    public static int add(int a, int b) {
+        // should return sum
+        return a - b;
+    }
+}`,
+      python: `# Fix the bug in this function
+def add(a, b):
+    # should return sum
+    return a - b`
+    },
+    starterCode: `// Fix the bug in this function
+#include <stdio.h>
+
+int add(int a, int b) {
+  // should return sum
+  return a - b;
+}`,
+    starterCodeByLanguage: {
+      javascript: `// Fix the bug in this function
+function add(a, b) {
+  // should return sum
+  return a - b;
+}`,
+      c: `// Fix the bug in this function
+#include <stdio.h>
+
+int add(int a, int b) {
+  // should return sum
+  return a - b;
+}`,
+      cpp: `// Fix the bug in this function
+#include <iostream>
+using namespace std;
+
+int add(int a, int b) {
+  // should return sum
+  return a - b;
+}`,
+      java: `// Fix the bug in this function
+public class Solution {
+    public static int add(int a, int b) {
+        // should return sum
+        return a - b;
+    }
+}`,
+      python: `# Fix the bug in this function
+def add(a, b):
+    # should return sum
+    return a - b`
+    },
+    supportedLanguages: ['c', 'javascript', 'cpp', 'java', 'python'],
     testCases: [
       { input: '5\n3', output: '8' },
       { input: '10\n20', output: '30' },
@@ -35,17 +111,49 @@ function add(a, b) {
   // Round 2 - Coding Problem
   {
     title: 'Factorial',
-    description: 'Write a function that returns the factorial of a given number n. factorial(n) = n * (n-1) * (n-2) * ... * 1',
+    description: 'Write a function that returns the factorial of a given number n. factorial(n) = n * (n-1) * (n-2) * ... * 1. Note: factorial(0) = 1',
     roundType: 2,
     inputFormat: 'A single integer n (0 <= n <= 20)',
     outputFormat: 'The factorial of n',
     constraints: '0 <= n <= 20',
     sampleInput: '5',
     sampleOutput: '120',
-    starterCode: `// Write a function that returns the factorial of a number
+    starterCode: `#include <stdio.h>
+
+// Write a function that returns the factorial of a number
+long long factorial(int n) {
+  // your code here
+}`,
+    starterCodeByLanguage: {
+      javascript: `// Write a function that returns the factorial of a number
 function factorial(n) {
   // your code here
 }`,
+      c: `#include <stdio.h>
+
+// Write a function that returns the factorial of a number
+long long factorial(int n) {
+  // your code here
+}`,
+      cpp: `#include <iostream>
+using namespace std;
+
+// Write a function that returns the factorial of a number
+long long factorial(int n) {
+  // your code here
+}`,
+      java: `public class Solution {
+    // Write a function that returns the factorial of a number
+    public static long factorial(int n) {
+        // your code here
+    }
+}`,
+      python: `# Write a function that returns the factorial of a number
+def factorial(n):
+    # your code here
+    pass`
+    },
+    supportedLanguages: ['c', 'javascript', 'cpp', 'java', 'python'],
     testCases: [
       { input: '5', output: '120' },
       { input: '0', output: '1' },

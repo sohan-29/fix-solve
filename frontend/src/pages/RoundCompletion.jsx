@@ -1,98 +1,79 @@
-import { useEffect, useState } from 'react';
-import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 export default function RoundCompletion() {
-  const location = useLocation();
   const navigate = useNavigate();
-  const [countdown, setCountdown] = useState(10);
-  
+  const location = useLocation();
   const { timeTaken, mistakes, penalty, round } = location.state || {};
-  const isRound1 = round === 1 || round === undefined;
 
-  useEffect(() => {
-    if (isRound1) {
-      const timer = setTimeout(() => {
-        navigate('/round2');
-      }, 10000);
-      
-      const countdownInterval = setInterval(() => {
-        setCountdown(prev => prev - 1);
-      }, 1000);
-      
-      return () => {
-        clearTimeout(timer);
-        clearInterval(countdownInterval);
-      };
-    }
-  }, [navigate, isRound1]);
-
+  // Format time as m:s
   const formatTime = (seconds) => {
-    if (!seconds) return '0:00';
+    if (!seconds && seconds !== 0) return '-';
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const handleNextRound = () => {
+    if (round === 1) {
+      navigate('/round2');
+    } else {
+      // Don't redirect - just show message
+      alert('The results will be announced s00n. Thank you for participating!');
+    }
+  };
+
+  const isLastRound = round === 2;
+
   return (
     <div className="completion-page">
       <div className="completion-container">
-        <div className="completion-icon">
-          {isRound1 ? '✓' : '🏆'}
-        </div>
-        
-        <h1>
-          {isRound1 ? 'Round 1 Complete!' : 'Contest Complete!'}
-        </h1>
+        <div className="completion-icon">✅</div>
+        <h1>Round {round} Complete!</h1>
         
         <div className="completion-stats">
           <div className="stat-item">
             <span className="stat-label">Time Taken</span>
             <span className="stat-value">{formatTime(timeTaken)}</span>
           </div>
-          
           <div className="stat-item">
             <span className="stat-label">Mistakes</span>
             <span className="stat-value">{mistakes || 0}</span>
           </div>
-          
           <div className="stat-item">
             <span className="stat-label">Penalty</span>
             <span className="stat-value penalty">+{penalty || 0}s</span>
           </div>
         </div>
-        
-        {isRound1 && (
+
+        {!isLastRound && (
           <div className="next-round-instructions">
-            <h3>Round 2 Instructions:</h3>
+            <h3>🎯 Ready for Round 2?</h3>
             <ul>
-              <li>Solve the problem from scratch</li>
-              <li>Write efficient code considering time complexity</li>
-              <li>Your code will be tested against hidden test cases</li>
-              <li>Each wrong submission adds 5 second penalty</li>
+              <li><strong>Round 2</strong> is a coding challenge where you solve the problem from scratch</li>
+              <li>You will write code to implement a solution based on the problem statement</li>
+              <li>The same penalty rules apply: +5 seconds for each wrong submission</li>
+              <li>Test your code with the sample test cases before submitting</li>
+              <li>Make sure to handle all edge cases mentioned in the problem</li>
             </ul>
           </div>
         )}
-        
+
+        {isLastRound && (
+          <div className="next-round-instructions">
+            <h3>🏆 Contest Complete!</h3>
+            <ul>
+              <li>You have completed both rounds of the contest</li>
+              <li>Your final score is based on total time + penalties</li>
+              <li>Results will be announced by the administrator</li>
+              <li>The results page route is: <strong>/results</strong></li>
+            </ul>
+          </div>
+        )}
+
         <div className="completion-actions">
-          {isRound1 ? (
-            <>
-              <p style={{ marginBottom: '15px', color: '#666', fontSize: '12px' }}>
-                Starting Round 2 in {countdown} seconds...
-              </p>
-              <button className="next-round-btn" onClick={() => navigate('/round2')}>
-                Start Round 2 Now
-              </button>
-            </>
-          ) : (
-            <>
-              <p style={{ marginBottom: '15px', color: '#666', fontSize: '12px' }}>
-                View final rankings
-              </p>
-              <Link to="/results" className="next-round-btn" style={{ display: 'inline-block', textDecoration: 'none' }}>
-                View Results
-              </Link>
-            </>
-          )}
+          <button className="next-round-btn" onClick={handleNextRound}>
+            {isLastRound ? 'Finish' : 'Start Round 2 →'}
+          </button>
         </div>
       </div>
     </div>
