@@ -13,13 +13,17 @@ const LANGUAGES = [
 
 export default function Round1() {
   const [code, setCode] = useState('');
+  const [problems, setProblems] = useState([]);
   const [problem, setProblem] = useState(null);
+  const [selectedProblemIndex, setSelectedProblemIndex] = useState(0);
   const [mistakes, setMistakes] = useState(0);
   const [startTime, setStartTime] = useState(null);
   const [loading, setLoading] = useState(true);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [selectedLanguage, setSelectedLanguage] = useState('c');
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [solvedProblems, setSolvedProblems] = useState(new Set());
+  const [totalMistakes, setTotalMistakes] = useState(0);
   const navigate = useNavigate();
 
   // Format time as h:m:s
@@ -34,26 +38,42 @@ export default function Round1() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Fetch problem with selected language
-  const fetchProblem = async (language) => {
+  // Fetch problems with selected language
+  const fetchProblems = async (language) => {
     try {
       const res = await axios.get(`/api/problems/round/1?language=${language}`);
-      const problemData = res.data;
+      const problemsData = res.data;
       
-      setProblem(problemData);
-      setCode(problemData.starterCode || '');
+      // Handle both array and single object responses
+      const problemsArray = Array.isArray(problemsData) ? problemsData : [problemsData];
+      setProblems(problemsArray);
+      
+      if (problemsArray.length > 0) {
+        setProblem(problemsArray[0]);
+        setCode(problemsArray[0].starterCode || '');
+      }
       setStartTime(Date.now());
     } catch (err) {
-      console.error('Error fetching problem:', err);
-      alert('Failed to load problem. Please refresh the page.');
+      console.error('Error fetching problems:', err);
+      alert('Failed to load problems. Please refresh the page.');
       setStartTime(Date.now());
     } finally {
       setLoading(false);
     }
   };
 
+  // Handle problem selection
+  const handleProblemSelect = (index) => {
+    setSelectedProblemIndex(index);
+    if (problems[index]) {
+      setProblem(problems[index]);
+      setCode(problems[index].starterCode || '');
+      setMistakes(0);
+    }
+  };
+
   useEffect(() => {
-    fetchProblem(selectedLanguage);
+    fetchProblems(selectedLanguage);
   }, []);
 
   // Timer effect
@@ -71,7 +91,7 @@ export default function Round1() {
     const newLang = e.target.value;
     setSelectedLanguage(newLang);
     setLoading(true);
-    await fetchProblem(newLang);
+    await fetchProblems(newLang);
   };
 
   // Prevent copy/paste
@@ -107,21 +127,44 @@ export default function Round1() {
       const status = result.result?.summary?.allPassed ? 'Accepted' : result.status;
       
       if (status === 'Accepted') {
-        const elapsed = (Date.now() - startTime) / 1000;
-        const penalty = mistakes * 5;
-        const total = elapsed + penalty;
-        await axios.post('/api/contests/end', { name: userName, round: 1, timeTaken: total });
+        // Mark this problem as solved
+        const newSolvedProblems = new Set(solvedProblems);
+        newSolvedProblems.add(problem._id);
+        setSolvedProblems(newSolvedProblems);
         
-        navigate('/round-complete', {
-          state: {
-            timeTaken: elapsed,
-            mistakes,
-            penalty,
-            round: 1
+        // Check if all problems are solved
+        const allSolved = problems.every(p => newSolvedProblems.has(p._id));
+        
+        if (allSolved) {
+          // All problems solved - go to round completion
+          const elapsed = (Date.now() - startTime) / 1000;
+          const penalty = totalMistakes * 5;
+          const total = elapsed + penalty;
+          await axios.post('/api/contests/end', { name: userName, round: 1, timeTaken: total });
+          
+          navigate('/round-complete', {
+            state: {
+              timeTaken: elapsed,
+              mistakes: totalMistakes,
+              penalty,
+              round: 1
+            }
+          });
+        } else {
+          // Some problems still unsolved - find next unsolved problem
+          alert('Correct! Moving to next problem...');
+          
+          // Find next unsolved problem
+          const nextIndex = problems.findIndex(p => !newSolvedProblems.has(p._id));
+          if (nextIndex !== -1) {
+            handleProblemSelect(nextIndex);
           }
-        });
+        }
       } else {
-        setMistakes(m => m + 1);
+        const newMistakes = mistakes + 1;
+        setMistakes(newMistakes);
+        setTotalMistakes(totalMistakes + 1);
+        
         if (result.result?.results) {
           const failedTest = result.result.results.find(r => !r.isPassed);
           if (failedTest) {
@@ -135,7 +178,9 @@ export default function Round1() {
       }
     } catch (err) {
       console.error(err);
-      setMistakes(m => m + 1);
+      const newMistakes = mistakes + 1;
+      setMistakes(newMistakes);
+      setTotalMistakes(totalMistakes + 1);
       alert('Submission failed');
     }
   };
@@ -149,12 +194,30 @@ export default function Round1() {
       <div className="round-header">
         <h2>Round 1 - Debug the Code</h2>
         <div className="timer">
-          Time: {formatTime(elapsedTime)} | Mistakes: {mistakes}
+          Time: {formatTime(elapsedTime)} | Mistakes: {totalMistakes} | Solved: {solvedProblems.size}/{problems.length}
         </div>
         <button onClick={toggleFullscreen} className="fullscreen-btn">
           {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
         </button>
       </div>
+
+      {/* Problem Selector */}
+      {problems.length > 1 && (
+        <div className="problem-selector">
+          <label htmlFor="problem-select">Select Problem: </label>
+          <select
+            id="problem-select"
+            value={selectedProblemIndex}
+            onChange={(e) => handleProblemSelect(parseInt(e.target.value))}
+          >
+            {problems.map((p, index) => (
+              <option key={p._id || index} value={index}>
+                {solvedProblems.has(p._id) ? '✓ ' : '○ '}{p.title}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       
       <div className="round-content-wrapper">
         {problem && (

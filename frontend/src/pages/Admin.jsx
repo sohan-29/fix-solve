@@ -18,13 +18,30 @@ const DEFAULT_BUG_CODE = {
 function add(a, b) {
   // should return sum
   return a - b;
-}`,
+}
+
+// Main function - DO NOT MODIFY
+const readline = require('readline');
+const rl = readline.createInterface({input: process.stdin, output: process.stdout});
+rl.on('line', (line) => {
+  const [a, b] = line.split(' ').map(Number);
+  console.log(add(a, b));
+  rl.close();
+});`,
   c: `// Fix the bug in this function
 #include <stdio.h>
 
 int add(int a, int b) {
   // should return sum
   return a - b;
+}
+
+// Main function - DO NOT MODIFY
+int main() {
+    int a, b;
+    scanf("%d %d", &a, &b);
+    printf("%d", add(a, b));
+    return 0;
 }`,
   cpp: `// Fix the bug in this function
 #include <iostream>
@@ -33,49 +50,93 @@ using namespace std;
 int add(int a, int b) {
   // should return sum
   return a - b;
+}
+
+// Main function - DO NOT MODIFY
+int main() {
+    int a, b;
+    cin >> a >> b;
+    cout << add(a, b);
+    return 0;
 }`,
   java: `// Fix the bug in this function
+import java.util.Scanner;
+
 public class Solution {
     public static int add(int a, int b) {
         // should return sum
         return a - b;
     }
+    
+    // Main function - DO NOT MODIFY
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        int a = sc.nextInt();
+        int b = sc.nextInt();
+        System.out.println(add(a, b));
+    }
 }`,
   python: `# Fix the bug in this function
 def add(a, b):
     # should return sum
-    return a - b`
+    return a - b
+
+# Main function - DO NOT MODIFY
+if __name__ == "__main__":
+    a, b = map(int, input().split())
+    print(add(a, b))`
 };
 
-// Default boilerplate code templates for Round 2 (Coding)
+// Default boilerplate code templates for Round 2 (Coding) - User writes code directly in main
 const DEFAULT_STARTER_CODE = {
-  javascript: `// Write a function that returns the factorial of a number
-function factorial(n) {
-  // your code here
-}`,
-  c: `#include <stdio.h>
+  javascript: `// Write your code in main
 
-// Write a function that returns the factorial of a number
-long long factorial(int n) {
-  // your code here
+const readline = require('readline');
+const rl = readline.createInterface({input: process.stdin, output: process.stdout});
+
+rl.on('line', (line) => {
+  // Write your code here
+  // Process the input and print the result
+  
+  console.log(result);
+  rl.close();
+});`,
+  c: `// Write your code in main
+
+#include <stdio.h>
+
+int main() {
+  // Write your code here
+  // Read input using scanf and print the result
+  
+  return 0;
 }`,
-  cpp: `#include <iostream>
+  cpp: `// Write your code in main
+
+#include <iostream>
 using namespace std;
 
-// Write a function that returns the factorial of a number
-long long factorial(int n) {
-  // your code here
+int main() {
+  // Write your code here
+  // Read input using cin and print the result
+  
+  return 0;
 }`,
-  java: `public class Solution {
-    // Write a function that returns the factorial of a number
-    public static long factorial(int n) {
-        // your code here
-    }
+  java: `
+  import java.util.Scanner;
+
+public class Solution {
+  public static void main(String[] args) {
+    // Write your code here
+    // Read input using Scanner and print the result
+    
+  }
 }`,
-  python: `# Write a function that returns the factorial of a number
-def factorial(n):
-    # your code here
-    pass`
+  python: `# Write your code in main
+# Read input using input() and print output
+
+# Write your code here
+# Read input using input() and print the result`
 };
 
 export default function Admin() {
@@ -83,6 +144,7 @@ export default function Admin() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('problems');
+  const [saveError, setSaveError] = useState('');
   const [problems, setProblems] = useState([]);
   const [submissions, setSubmissions] = useState([]);
   const [users, setUsers] = useState([]);
@@ -236,6 +298,7 @@ export default function Admin() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSaveError('');
     try {
       if (editingProblem) {
         await axios.put(`/api/problems/${editingProblem}`, formData);
@@ -246,7 +309,32 @@ export default function Admin() {
       resetForm();
     } catch (err) {
       console.error('Error saving problem:', err);
-      alert('Error saving problem');
+      
+      let errorMessage;
+      
+      // Check for network error (no response from server, CORS issues, etc.)
+      if (!err.response) {
+        // Network error - could be server down, CORS issue, etc.
+        if (err.message && err.message.includes('Network Error')) {
+          errorMessage = 'Network Error: Unable to connect to the server. Please ensure the backend is running and CORS is properly configured.';
+        } else if (err.code === 'ECONNREFUSED') {
+          errorMessage = 'Connection Refused: The server is not running. Please start the backend server.';
+        } else if (err.code === 'ERR_NETWORK') {
+          errorMessage = 'Network Error: Unable to connect to the server. Please check if the backend is running.';
+        } else {
+          errorMessage = err.message || 'Network Error: Unable to connect to server';
+        }
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.response?.data) {
+        errorMessage = JSON.stringify(err.response.data);
+      } else {
+        errorMessage = err.message || 'Error saving problem';
+      }
+      
+      setSaveError(errorMessage);
     }
   };
 
@@ -672,6 +760,12 @@ export default function Admin() {
                   ))}
                   <button type="button" onClick={() => addTestCase(true)}>+ Add Hidden Test Case</button>
                 </div>
+
+                {saveError && (
+                  <div className="error-message" style={{ color: 'red', marginTop: '10px', padding: '10px', border: '1px solid red', borderRadius: '4px', backgroundColor: '#ffe6e6' }}>
+                    <strong>Error:</strong> {saveError}
+                  </div>
+                )}
 
                 <div className="form-actions">
                   <button type="submit" className="save-btn">

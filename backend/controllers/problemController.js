@@ -22,40 +22,44 @@ const getProblems = async (req, res, next) => {
 const getProblemByRound = async (req, res, next) => {
   try {
     const { round } = req.params;
-    const { language = 'javascript' } = req.query;
-    const problem = await Problem.findOne({ roundType: parseInt(round) });
+    const { language = 'c' } = req.query;
+    const problems = await Problem.find({ roundType: parseInt(round) });
     
-    if (!problem) {
+    if (!problems || problems.length === 0) {
       return res.status(404).json({ error: `No problem found for round ${round}` });
     }
     
-    // Build response
-    const response = problem.toObject();
-    
-    // Get the correct code based on language
-    if (parseInt(round) === 1) {
-      // Round 1 - Debugging: use bugCodeByLanguage or fallback to bugCode
-      if (problem.bugCodeByLanguage && problem.bugCodeByLanguage[language]) {
-        response.starterCode = problem.bugCodeByLanguage[language];
+    // Process each problem to add language-specific code
+    const processedProblems = problems.map(problem => {
+      const response = problem.toObject();
+      
+      // Get the correct code based on language
+      if (parseInt(round) === 1) {
+        // Round 1 - Debugging: use bugCodeByLanguage or fallback to bugCode
+        if (problem.bugCodeByLanguage && problem.bugCodeByLanguage[language]) {
+          response.starterCode = problem.bugCodeByLanguage[language];
+        } else {
+          response.starterCode = problem.bugCode || '';
+        }
       } else {
-        response.starterCode = problem.bugCode || '';
+        // Round 2 - Coding: use starterCodeByLanguage or fallback to starterCode
+        if (problem.starterCodeByLanguage && problem.starterCodeByLanguage[language]) {
+          response.starterCode = problem.starterCodeByLanguage[language];
+        } else {
+          response.starterCode = problem.starterCode || '';
+        }
       }
-    } else {
-      // Round 2 - Coding: use starterCodeByLanguage or fallback to starterCode
-      if (problem.starterCodeByLanguage && problem.starterCodeByLanguage[language]) {
-        response.starterCode = problem.starterCodeByLanguage[language];
-      } else {
-        response.starterCode = problem.starterCode || '';
-      }
-    }
+      
+      // Don't include hidden test cases in response
+      delete response.hiddenTestCases;
+      delete response.bugCode;
+      delete response.bugCodeByLanguage;
+      delete response.starterCodeByLanguage;
+      
+      return response;
+    });
     
-    // Don't include hidden test cases in response
-    delete response.hiddenTestCases;
-    delete response.bugCode;
-    delete response.bugCodeByLanguage;
-    delete response.starterCodeByLanguage;
-    
-    res.json(response);
+    res.json(processedProblems);
   } catch (error) {
     next(error);
   }
