@@ -61,9 +61,43 @@ const getProblemById = async (req, res, next) => {
   }
 };
 
+// Update problem
+const updateProblem = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const problem = await Problem.findByIdAndUpdate(id, req.body, { new: true, runValidators: true });
+    
+    if (!problem) {
+      return res.status(404).json({ error: 'Problem not found' });
+    }
+    
+    res.json(problem);
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Delete problem
+const deleteProblem = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const problem = await Problem.findByIdAndDelete(id);
+    
+    if (!problem) {
+      return res.status(404).json({ error: 'Problem not found' });
+    }
+    
+    res.json({ message: 'Problem deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = { 
   createProblem, 
   getProblems, 
   getProblemByRound,
-  getProblemById 
+  getProblemById,
+  updateProblem,
+  deleteProblem
 };

@@ -7,6 +7,7 @@ export default function Round1() {
   const [problem, setProblem] = useState(null);
   const [mistakes, setMistakes] = useState(0);
   const [startTime, setStartTime] = useState(null);
+  const [elapsedTime, setElapsedTime] = useState(0);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
@@ -33,6 +34,23 @@ function add(a, b) {
     fetchProblem();
   }, []);
 
+  // Timer effect
+  useEffect(() => {
+    if (!startTime || loading) return;
+    
+    const timer = setInterval(() => {
+      setElapsedTime((Date.now() - startTime) / 1000);
+    }, 100);
+
+    return () => clearInterval(timer);
+  }, [startTime, loading]);
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   const handleSubmit = async () => {
     try {
       const userId = localStorage.getItem('userId');
@@ -52,8 +70,18 @@ function add(a, b) {
         const elapsed = (Date.now() - startTime) / 1000;
         const penalty = mistakes * 5;
         const total = elapsed + penalty;
+        
         await axios.post('/api/contests/end', { name: userName, round: 1, timeTaken: total });
-        navigate('/round2');
+        
+        // Navigate to completion page with stats
+        navigate('/round-completion', {
+          state: {
+            roundNumber: 1,
+            timeTaken: elapsed,
+            mistakes: mistakes,
+            penalty: penalty
+          }
+        });
       } else {
         setMistakes(m => m + 1);
         // Show detailed feedback
@@ -80,52 +108,80 @@ function add(a, b) {
   }
 
   return (
-    <div className="container">
-      <h2>Round 1 - Debug the Code</h2>
-      
-      {problem && (
-        <div className="problem-description">
-          <h3>{problem.title}</h3>
-          <p>{problem.description}</p>
-          {problem.inputFormat && (
-            <p><strong>Input Format:</strong> {problem.inputFormat}</p>
-          )}
-          {problem.outputFormat && (
-            <p><strong>Output Format:</strong> {problem.outputFormat}</p>
-          )}
-          {problem.sampleInput && (
-            <div>
-              <strong>Sample Input:</strong>
-              <pre style={{ background: '#f4f4f4', padding: '10px' }}>{problem.sampleInput}</pre>
-            </div>
-          )}
-          {problem.sampleOutput && (
-            <div>
-              <strong>Sample Output:</strong>
-              <pre style={{ background: '#f4f4f4', padding: '10px' }}>{problem.sampleOutput}</pre>
-            </div>
-          )}
+    <div className="round-page">
+      <div className="round-header">
+        <div className="round-title">
+          <h2>Round 1 - Debug the Code</h2>
         </div>
-      )}
-      
-      <textarea
-        rows={15}
-        cols={60}
-        value={code}
-        onChange={e => setCode(e.target.value)}
-        style={{ fontFamily: 'monospace', width: '100%', marginTop: '10px' }}
-      />
-      
-      <div style={{ marginTop: '10px' }}>
-        <button onClick={handleSubmit} style={{ marginRight: '10px' }}>
-          Submit
-        </button>
-        <button onClick={() => setCode(problem?.bugCode || '')}>
-          Reset Code
-        </button>
+        <div className="round-timer">
+          <span className="timer-label">Time:</span>
+          <span className="timer-value">{formatTime(elapsedTime)}</span>
+        </div>
+        <div className="round-stats">
+          <span className="mistakes-count">Mistakes: {mistakes}</span>
+          <span className="penalty-info">Penalty: +{mistakes * 5}s</span>
+        </div>
       </div>
       
-      <p>Mistakes: {mistakes}</p>
+      <div className="round-content">
+        <div className="problem-description">
+          {problem && (
+            <>
+              <h3>{problem.title}</h3>
+              <p>{problem.description}</p>
+              {problem.inputFormat && (
+                <p><strong>Input Format:</strong> {problem.inputFormat}</p>
+              )}
+              {problem.outputFormat && (
+                <p><strong>Output Format:</strong> {problem.outputFormat}</p>
+              )}
+              {problem.sampleInput && (
+                <div>
+                  <strong>Sample Input:</strong>
+                  <pre style={{ background: '#f4f4f4', padding: '10px' }}>{problem.sampleInput}</pre>
+                </div>
+              )}
+              {problem.sampleOutput && (
+                <div>
+                  <strong>Sample Output:</strong>
+                  <pre style={{ background: '#f4f4f4', padding: '10px' }}>{problem.sampleOutput}</pre>
+                </div>
+              )}
+              {problem.constraints && (
+                <p><strong>Constraints:</strong> {problem.constraints}</p>
+              )}
+              {problem.timeLimit && (
+                <p><strong>Time Limit:</strong> {problem.timeLimit}s</p>
+              )}
+              {problem.difficulty && (
+                <p><strong>Difficulty:</strong> {problem.difficulty}</p>
+              )}
+              {problem.complexity && (
+                <p><strong>Expected Complexity:</strong> {problem.complexity}</p>
+              )}
+            </>
+          )}
+        </div>
+        
+        <div>
+          <textarea
+            rows={20}
+            cols={60}
+            value={code}
+            onChange={e => setCode(e.target.value)}
+            style={{ fontFamily: 'monospace', width: '100%', marginTop: '10px' }}
+          />
+          
+          <div style={{ marginTop: '10px' }}>
+            <button onClick={handleSubmit} style={{ marginRight: '10px' }}>
+              Submit
+            </button>
+            <button onClick={() => setCode(problem?.bugCode || '')}>
+              Reset Code
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

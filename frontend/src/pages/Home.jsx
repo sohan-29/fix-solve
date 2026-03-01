@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import axios from '../api';
 
 export default function Home() {
@@ -7,19 +7,18 @@ export default function Home() {
   const [showPopup, setShowPopup] = useState(false);
   const navigate = useNavigate();
 
-  const registerAndStart = async () => {
+  const handleStart = async () => {
     try {
       // register user if not exists
       const res = await axios.post('/api/users/register', { name });
       const user = res.data;
       localStorage.setItem('userId', user._id);
-      // start round1
-      await axios.post('/api/contests/start', { name, round: 1 });
       localStorage.setItem('userName', name);
-      navigate('/round1');
+      // Go to instructions page first
+      navigate('/instructions');
     } catch (err) {
       console.error(err);
-      alert('Failed to start round');
+      alert('Failed to register. Please try again.');
     }
   };
 
@@ -31,17 +30,23 @@ export default function Home() {
         <input value={name} onChange={e => setName(e.target.value)} />
       </label>
       <button disabled={!name} onClick={() => setShowPopup(true)}>
-        Start Round 1
+        Start Contest
       </button>
+      
+      <div style={{ marginTop: '20px' }}>
+        <Link to="/admin" style={{ color: '#6C5CE7', textDecoration: 'none' }}>
+          Admin Panel
+        </Link>
+      </div>
 
       {showPopup && (
         <div className="modal">
           <div className="modal-content">
-            <p>Click OK to begin Round 1</p>
+            <p>Click OK to read the contest instructions</p>
             <button
               onClick={() => {
                 setShowPopup(false);
-                registerAndStart();
+                handleStart();
               }}
             >
               OK

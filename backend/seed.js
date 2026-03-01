@@ -27,7 +27,10 @@ function add(a, b) {
     hiddenTestCases: [
       { input: '100\n200', output: '300' },
       { input: '0\n0', output: '0' }
-    ]
+    ],
+    timeLimit: 60,
+    difficulty: 'Easy',
+    complexity: 'O(1)'
   },
   // Round 2 - Coding Problem
   {
@@ -51,7 +54,10 @@ function factorial(n) {
     hiddenTestCases: [
       { input: '20', output: '2432902008176640000' },
       { input: '1', output: '1' }
-    ]
+    ],
+    timeLimit: 120,
+    difficulty: 'Easy',
+    complexity: 'O(n)'
   }
 ];
 

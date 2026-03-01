@@ -63,3 +63,528 @@
 .read-the-docs {
   color: #888;
 }
+
+/* Instructions Page */
+.instructions-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.instructions-container {
+  background: white;
+  border-radius: 16px;
+  padding: 40px;
+  max-width: 800px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.instructions-container h1 {
+  color: #6C5CE7;
+  margin-bottom: 30px;
+  font-size: 2.5em;
+}
+
+.instructions-section {
+  text-align: left;
+  margin-bottom: 30px;
+}
+
+.rule-item {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  border-left: 4px solid #6C5CE7;
+}
+
+.rule-item h3 {
+  color: #474787;
+  margin-bottom: 10px;
+}
+
+.rule-item ul {
+  margin-left: 20px;
+  color: #666;
+}
+
+.rule-item li {
+  margin-bottom: 5px;
+}
+
+.agreement-section {
+  margin: 30px 0;
+  padding: 20px;
+  background: #f0f0f0;
+  border-radius: 8px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.checkbox-label input {
+  width: 20px;
+  height: 20px;
+}
+
+.enter-contest-btn {
+  background: linear-gradient(135deg, #6C5CE7 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 15px 40px;
+  font-size: 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.enter-contest-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(108, 92, 231, 0.4);
+}
+
+.enter-contest-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Round Pages */
+.round-page {
+  min-height: 100vh;
+  background: #f5f5f5;
+}
+
+.round-header {
+  background: linear-gradient(135deg, #6C5CE7 0%, #764ba2 100%);
+  color: white;
+  padding: 15px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.round-title h2 {
+  margin: 0;
+  font-size: 1.5em;
+}
+
+.round-timer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.5em;
+  font-weight: bold;
+}
+
+.timer-label {
+  opacity: 0.8;
+}
+
+.timer-value {
+  background: rgba(255,255,255,0.2);
+  padding: 5px 15px;
+  border-radius: 5px;
+}
+
+.round-stats {
+  display: flex;
+  gap: 20px;
+  font-size: 0.9em;
+}
+
+.mistakes-count {
+  background: #e74c3c;
+  padding: 5px 15px;
+  border-radius: 5px;
+}
+
+.penalty-info {
+  background: #f39c12;
+  padding: 5px 15px;
+  border-radius: 5px;
+}
+
+.fullscreen-warning {
+  background: #e74c3c;
+  color: white;
+  padding: 10px;
+  text-align: center;
+}
+
+.fullscreen-warning button {
+  margin-left: 10px;
+  padding: 5px 15px;
+  background: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.tab-warning {
+  background: #f39c12;
+  color: white;
+  padding: 10px;
+  text-align: center;
+}
+
+.round-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.problem-description {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: left;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.problem-description h3 {
+  color: #6C5CE7;
+  margin-bottom: 15px;
+}
+
+.problem-description pre {
+  background: #f4f4f4;
+  padding: 10px;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+.round-content textarea {
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+  font-size: 14px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.round-content button {
+  background: #6C5CE7;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.round-content button:hover {
+  background: #5b4cdb;
+}
+
+/* Completion Page */
+.completion-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.completion-container {
+  background: white;
+  border-radius: 16px;
+  padding: 50px;
+  max-width: 600px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  text-align: center;
+}
+
+.completion-icon {
+  font-size: 80px;
+  margin-bottom: 20px;
+}
+
+.completion-container h1 {
+  color: #6C5CE7;
+  margin-bottom: 30px;
+}
+
+.completion-stats {
+  display: flex;
+  justify-content: space-around;
+  margin: 30px 0;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.stat-label {
+  color: #666;
+  font-size: 0.9em;
+}
+
+.stat-value {
+  font-size: 2em;
+  font-weight: bold;
+  color: #6C5CE7;
+}
+
+.stat-value.penalty {
+  color: #e74c3c;
+}
+
+.next-round-instructions {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: left;
+  margin: 20px 0;
+  border-left: 4px solid #6C5CE7;
+}
+
+.next-round-instructions h3 {
+  color: #474787;
+  margin-bottom: 10px;
+}
+
+.next-round-instructions ul {
+  margin-left: 20px;
+}
+
+.next-round-instructions li {
+  margin-bottom: 5px;
+}
+
+.completion-actions {
+  margin-top: 30px;
+}
+
+.next-round-btn {
+  background: linear-gradient(135deg, #6C5CE7 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 15px 40px;
+  font-size: 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.next-round-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(108, 92, 231, 0.4);
+}
+
+/* Admin Page */
+.admin-page {
+  min-height: 100vh;
+  background: #f5f5f5;
+}
+
+.admin-header {
+  background: linear-gradient(135deg, #6C5CE7 0%, #764ba2 100%);
+  color: white;
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.admin-header button {
+  background: white;
+  color: #6C5CE7;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.admin-tabs {
+  display: flex;
+  background: white;
+  padding: 10px;
+  gap: 10px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.admin-tabs button {
+  background: #f0f0f0;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.admin-tabs button.active {
+  background: #6C5CE7;
+  color: white;
+}
+
+.admin-content {
+  padding: 20px;
+}
+
+.problems-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.problem-form {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.form-row {
+  margin-bottom: 15px;
+  text-align: left;
+}
+
+.form-row label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: #474787;
+}
+
+.form-row input,
+.form-row textarea,
+.form-row select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.test-cases-section {
+  margin-top: 20px;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.test-case-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.test-case-row input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.test-case-row button {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.form-actions {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.save-btn {
+  background: #6C5CE7;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.cancel-btn {
+  background: #95a5a6;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.problems-list {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.problems-list table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.problems-list th,
+.problems-list td {
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+  text-align: left;
+}
+
+.problems-list th {
+  background: #f8f9fa;
+  font-weight: bold;
+}
+
+.problems-list button {
+  margin-right: 5px;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.problems-list .delete-btn {
+  background: #e74c3c;
+  color: white;
+}
+
+.submissions-section,
+.leaderboard-section {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.submissions-section table,
+.leaderboard-section table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.submissions-section th,
+.submissions-section td,
+.leaderboard-section th,
+.leaderboard-section td {
+  padding: 10px;
+  border-bottom: 1px solid #ddd;
+  text-align: left;
+}
+
+.submissions-section th,
+.leaderboard-section th {
+  background: #f8f9fa;
+  font-weight: bold;
+}

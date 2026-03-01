@@ -23,6 +23,9 @@ const problemSchema = new mongoose.Schema({
       output: String
     }
   ],
+  timeLimit: { type: Number, default: 60 }, // Time limit in seconds
+  difficulty: { type: String, enum: ['Easy', 'Medium', 'Hard'], default: 'Easy' },
+  complexity: { type: String, default: 'O(1)' }, // Expected time complexity
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true });
 
