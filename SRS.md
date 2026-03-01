@@ -84,18 +84,20 @@ The platform utilizes a **Centralized LAN Server Architecture** based on the Cli
 
 ### Dashboard
 *   **Event Details:** Display of rules, current round, and user profile.
-*   **Countdown Timer:** Synchronized server-side timer to prevent local machine time tampering.
+*   **Individual Asynchronous Timer:** Each participant has their own server-side timer that starts when they enter a round. The server issues a `timerStartTime` timestamp; the client derives the countdown from it, preventing local clock tampering. Timers run independently per machine.
 *   **Round Unlock System:** Subsequent rounds remain locked until triggered by the Admin or scheduled time.
+
+### Coordinator Reset / Retry Mechanism
+*   **Purpose:** In the event of a machine malfunction or app crash, a coordinator can reset a participant's timer to grant them another attempt.
+*   **Admin API:** `POST /api/contests/admin/reset-session` — clears the participant's `timerStartTime` and sets a `retryAllowed` flag.
+*   **Retry Tracking:** Each reset increments a `resetCount` on the user record for audit purposes.
+*   **Client Behavior:** On the next round entry after a reset, the participant receives a fresh timer. New responses from that point onward are treated normally by the system.
 
 ### Round 1: Debugging Phase
 *   **Display:** Presentation of intentionally buggy code snippets with language selection.
 *   **Code Editor:** Integrated **Monaco Editor** (VS Code core) with syntax highlighting; auto-complete/IntelliSense disabled.
 *   **Evaluation:** Execution via sandboxed environment against predefined input/output pairs.
 *   **Scoring:** Binary scoring (Pass/Fail per test case) or partial points.
-
-### Qualification Logic
-*   **Threshold:** Automated calculation of Top *N* participants or Top *X%* based on Round 1 scores.
-*   **Automatic Ranking:** Seamless transition; non-qualified users see a "Thank You" screen.
 
 ### Round 2: Coding Phase
 *   **Problem Statement:** Detailed description, I/O format, constraints, and sample test cases.
@@ -150,20 +152,29 @@ The platform utilizes a **Centralized LAN Server Architecture** based on the Cli
 
 ## 8. Scoring Algorithm
 
-The platform uses a time-decay model to reward accuracy and speed.
+The platform uses a time-decay model to reward accuracy and speed. All time references are derived from the **server-side individual timer**, not the client clock.
 
 ### Variables
-*   $P$: Maximum points for the problem.
-*   $T_{max}$: Total time allotted for the round (minutes).
-*   $T_{taken}$: Time elapsed when the correct submission was made.
-*   $W$: Number of incorrect submissions.
-*   $P_{penalty}$: Fixed penalty per wrong submission.
-*   $D$: Decay constant per minute.
+*   $P$: Maximum points for the problem (configurable per problem, default: 100).
+*   $T_{taken}$: Time elapsed **in seconds** from the participant's personal timer start until the correct submission was made.
+*   $W$: Number of incorrect submissions before the accepted one.
+*   $P_{penalty}$: Fixed penalty per wrong submission (default: **10 points**).
+*   $D$: Decay constant **per second** (default: **0.005 points/second**).
+*   $P_{min}$: Minimum guaranteed score for a correct answer (default: **30% of $P$**).
 
 ### Formula
-$$Score = \max\left(P_{min}, P - (T_{taken} \times D) - (W \times P_{penalty})\right)$$
+$$Score = \max\left(P_{min},\ P - (T_{taken} \times D) - (W \times P_{penalty})\right)$$
 
-*(Where $P_{min}$ is the minimum guaranteed score for a correct solution, e.g., 30% of $P$).*
+### Default Parameters
+| Symbol | Value | Meaning |
+| :--- | :--- | :--- |
+| $D$ | 0.005 | Points lost per second — a 10-minute solve loses 3 points |
+| $P_{penalty}$ | 10 | Points lost per wrong submission |
+| $P_{min}$ | 30% of $P$ | Floor score so a slow-but-correct solve is still rewarded |
+
+### Example
+A problem worth 100 points, solved at 8 minutes (480 seconds) with 2 wrong submissions:
+$$Score = \max(30,\ 100 - (480 \times 0.005) - (2 \times 10)) = \max(30,\ 100 - 2.4 - 20) = 77.6$$
 
 ---
 
