@@ -1160,3 +1160,58 @@ body {
     flex-wrap: wrap;
   }
 }
+
+/* ===== Anti-Cheat: Warning Banner ===== */
+.warning-banner {
+  background: #332b00;
+  color: #ffd700;
+  border: 1px solid #ffd700;
+  padding: 12px 20px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+  animation: warning-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes warning-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* ===== Anti-Cheat: Lockout Overlay ===== */
+.lockout-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(10, 0, 0, 0.96);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.lockout-content {
+  background: #1a1a1a;
+  border: 2px solid #ff4444;
+  border-radius: 8px;
+  padding: 50px 40px;
+  max-width: 500px;
+  text-align: center;
+}
+
+.lockout-content h2 {
+  color: #ff4444;
+  font-size: 24px;
+  margin-bottom: 20px;
+  border: none;
+}
+
+.lockout-content p {
+  color: #aaa;
+  font-size: 14px;
+  margin-bottom: 10px;
+  line-height: 1.6;
+}
