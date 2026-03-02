@@ -132,11 +132,8 @@ public class Solution {
     
   }
 }`,
-  python: `# Write your code in main
-# Read input using input() and print output
-
-# Write your code here
-# Read input using input() and print the result`
+python: `# Read input using input() and print the result
+# Write your code here`
 };
 
 export default function Admin() {
@@ -275,19 +272,44 @@ export default function Admin() {
   const generateBoilerplate = () => {
     if (formData.roundType === 1) {
       // For Round 1 (Debugging) - use bug code templates
+      const pythonBugCode = `# Fix the bug in this function
+def add(a, b):
+    # should return sum
+    return a - b
+
+# Main function - DO NOT MODIFY
+if __name__ == "__main__":
+    a, b = map(int, input().split())
+    print(add(a, b))`;
+      
       setFormData(prev => ({
         ...prev,
-        bugCode: DEFAULT_BUG_CODE.javascript,
-        bugCodeByLanguage: { ...DEFAULT_BUG_CODE },
-        starterCode: DEFAULT_STARTER_CODE.javascript,
+        bugCode: DEFAULT_BUG_CODE.c,
+        bugCodeByLanguage: {
+          ...DEFAULT_BUG_CODE,
+          python: pythonBugCode
+        },
+        starterCode: DEFAULT_STARTER_CODE.c,
         starterCodeByLanguage: { ...DEFAULT_STARTER_CODE }
       }));
     } else {
       // For Round 2 (Coding) - use starter code templates
+      const pythonStarterCode = `# Write your code here
+# Read input using input() and print output
+def solve():
+    # Your code here
+    pass
+
+if __name__ == "__main__":
+    solve()`;
+      
       setFormData(prev => ({
         ...prev,
-        starterCode: DEFAULT_STARTER_CODE.javascript,
-        starterCodeByLanguage: { ...DEFAULT_STARTER_CODE },
+        starterCode: DEFAULT_STARTER_CODE.c,
+        starterCodeByLanguage: {
+          ...DEFAULT_STARTER_CODE,
+          python: pythonStarterCode
+        },
         bugCode: '',
         bugCodeByLanguage: {
           javascript: '', c: '', cpp: '', java: '', python: ''

@@ -11,9 +11,9 @@ require("dotenv").config();
 const app = express();
 app.use(express.json());
 
-// CORS configuration
+// CORS configuration - allow all origins for LAN access
 const corsOptions = {
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: true,  // Allow all origins for LAN access
   credentials: true,
   optionsSuccessStatus: 200
 };
@@ -71,4 +71,4 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: err.message || 'Internal Server Error' });
 });
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, '0.0.0.0', () => console.log(`Server running on port ${PORT}`));

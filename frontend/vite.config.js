@@ -11,8 +11,13 @@ export default defineConfig({
     }),
   ],
   server: {
+    host: '0.0.0.0',  // Listen on all network interfaces for LAN access
+    port: 5173,
     proxy: {
-      '/api': 'http://localhost:3000',
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
     },
   },
 })
