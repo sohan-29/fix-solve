@@ -1,4 +1,4 @@
-const Submission = require('../models/Submission');
+const Submission = require('../models/submission');
 const Problem = require('../models/problem');
 const User = require('../models/User');
 const { runAllTestCases } = require('../utils/judge0Client');
