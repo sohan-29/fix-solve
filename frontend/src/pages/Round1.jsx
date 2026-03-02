@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import axios from '../api';
 import { useNavigate } from 'react-router-dom';
+import useAntiCheat from '../hooks/useAntiCheat';
 
 // Language options with display names
 const LANGUAGES = [
@@ -25,13 +26,15 @@ export default function Round1() {
   const [solvedProblems, setSolvedProblems] = useState(new Set());
   const [totalMistakes, setTotalMistakes] = useState(0);
   const navigate = useNavigate();
+  const userId = localStorage.getItem('userId');
+  const { warnings, isLockedOut, MAX_WARNINGS } = useAntiCheat(userId);
 
   // Format time as h:m:s
   const formatTime = (seconds) => {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
     const secs = Math.floor(seconds % 60);
-    
+
     if (hrs > 0) {
       return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
@@ -43,11 +46,11 @@ export default function Round1() {
     try {
       const res = await axios.get(`/api/problems/round/1?language=${language}`);
       const problemsData = res.data;
-      
+
       // Handle both array and single object responses
       const problemsArray = Array.isArray(problemsData) ? problemsData : [problemsData];
       setProblems(problemsArray);
-      
+
       if (problemsArray.length > 0) {
         setProblem(problemsArray[0]);
         setCode(problemsArray[0].starterCode || '');
@@ -115,33 +118,33 @@ export default function Round1() {
     try {
       const userId = localStorage.getItem('userId');
       const userName = localStorage.getItem('userName');
-      
+
       const res = await axios.post('/api/submissions', {
         problemId: problem?._id || null,
         code,
         language: selectedLanguage,
         userId
       });
-      
+
       const result = res.data;
       const status = result.result?.summary?.allPassed ? 'Accepted' : result.status;
-      
+
       if (status === 'Accepted') {
         // Mark this problem as solved
         const newSolvedProblems = new Set(solvedProblems);
         newSolvedProblems.add(problem._id);
         setSolvedProblems(newSolvedProblems);
-        
+
         // Check if all problems are solved
         const allSolved = problems.every(p => newSolvedProblems.has(p._id));
-        
+
         if (allSolved) {
           // All problems solved - go to round completion
           const elapsed = (Date.now() - startTime) / 1000;
           const penalty = totalMistakes * 5;
           const total = elapsed + penalty;
           await axios.post('/api/contests/end', { name: userName, round: 1, timeTaken: total });
-          
+
           navigate('/round-complete', {
             state: {
               timeTaken: elapsed,
@@ -153,7 +156,7 @@ export default function Round1() {
         } else {
           // Some problems still unsolved - find next unsolved problem
           alert('Correct! Moving to next problem...');
-          
+
           // Find next unsolved problem
           const nextIndex = problems.findIndex(p => !newSolvedProblems.has(p._id));
           if (nextIndex !== -1) {
@@ -164,7 +167,7 @@ export default function Round1() {
         const newMistakes = mistakes + 1;
         setMistakes(newMistakes);
         setTotalMistakes(totalMistakes + 1);
-        
+
         if (result.result?.results) {
           const failedTest = result.result.results.find(r => !r.isPassed);
           if (failedTest) {
@@ -201,6 +204,24 @@ export default function Round1() {
         </button>
       </div>
 
+      {/* Anti-cheat warning banner */}
+      {warnings > 0 && !isLockedOut && (
+        <div className="warning-banner">
+          ⚠️ Warning! Tab switch detected. If you switch again you will be <strong>locked out</strong>.
+        </div>
+      )}
+
+      {/* Lockout overlay */}
+      {isLockedOut && (
+        <div className="lockout-overlay">
+          <div className="lockout-content">
+            <h2>🚫 You Have Been Locked Out</h2>
+            <p>Multiple tab switches were detected. Your session has been terminated.</p>
+            <p>Please contact a coordinator if you believe this is an error.</p>
+          </div>
+        </div>
+      )}
+
       {/* Problem Selector */}
       {problems.length > 1 && (
         <div className="problem-selector">
@@ -218,7 +239,7 @@ export default function Round1() {
           </select>
         </div>
       )}
-      
+
       <div className="round-content-wrapper">
         {problem && (
           <div className="problem-description">
@@ -244,13 +265,13 @@ export default function Round1() {
             )}
           </div>
         )}
-        
+
         {/* Language Selector */}
         <div className="language-selector">
           <label htmlFor="language">Select Language: </label>
-          <select 
-            id="language" 
-            value={selectedLanguage} 
+          <select
+            id="language"
+            value={selectedLanguage}
             onChange={handleLanguageChange}
           >
             {LANGUAGES.map(lang => (
@@ -260,7 +281,7 @@ export default function Round1() {
             ))}
           </select>
         </div>
-        
+
         <div className="code-editor-wrapper">
           <textarea
             className="code-textarea"
@@ -274,7 +295,7 @@ export default function Round1() {
             draggable={false}
           />
         </div>
-        
+
         <div className="round-actions">
           <button onClick={handleSubmit}>
             Submit

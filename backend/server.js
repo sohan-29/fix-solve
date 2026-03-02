@@ -9,6 +9,7 @@ const Problem = require("./models/problem");
 require("dotenv").config();
 
 const app = express();
+app.set('trust proxy', true);
 app.use(express.json());
 
 // CORS configuration

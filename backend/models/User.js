@@ -34,6 +34,10 @@ const UserSchema = new mongoose.Schema(
     round2Time: { type: Number, default: 0 },
     totalTime: { type: Number, default: 0 },
 
+    // --- Anti-Cheat (Page Visibility API) ---
+    tabSwitchCount: { type: Number, default: 0 },
+    isLockedOut: { type: Boolean, default: false },
+
     isQualified: { type: Boolean, default: false },
   },
   { timestamps: true }

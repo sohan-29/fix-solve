@@ -22,6 +22,22 @@ const createSubmission = async (req, res, next) => {
     if (userIdResolved && userIdResolved !== 'anonymous') {
       user = await User.findById(userIdResolved);
       if (user) {
+        // --- Anti-cheat lockout check ---
+        if (user.isLockedOut) {
+          return res.status(403).json({
+            error: 'Locked out',
+            message: 'You have been locked out for switching tabs during the contest.',
+          });
+        }
+
+        // --- IP Binding check ---
+        if (user.ip && user.ip !== req.ip) {
+          return res.status(403).json({
+            error: 'IP mismatch',
+            message: 'Submissions must come from the same machine you registered on.',
+          });
+        }
+
         const timerStart = user[`round${round}TimerStart`];
         const duration = user[`round${round}Duration`];
 

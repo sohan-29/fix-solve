@@ -147,3 +147,49 @@ exports.endRound = async (req, res) => {
     res.status(500).json({ error: "Failed to end round" });
   }
 };
+
+/**
+ * POST /api/contests/report-violation
+ * Called by the frontend when a tab-switch is detected via the Page Visibility API.
+ * 1st offence  → warning only (tabSwitchCount = 1).
+ * 2nd offence  → auto-lockout (isLockedOut = true).
+ * Body: { userId }
+ */
+exports.reportViolation = async (req, res) => {
+  const { userId } = req.body;
+  if (!userId) {
+    return res.status(400).json({ error: "userId is required" });
+  }
+  try {
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    // Already locked out — nothing more to do
+    if (user.isLockedOut) {
+      return res.json({
+        tabSwitchCount: user.tabSwitchCount,
+        isLockedOut: true,
+        message: "User is already locked out.",
+      });
+    }
+
+    user.tabSwitchCount += 1;
+
+    if (user.tabSwitchCount >= 2) {
+      user.isLockedOut = true;
+    }
+
+    await user.save();
+
+    res.json({
+      tabSwitchCount: user.tabSwitchCount,
+      isLockedOut: user.isLockedOut,
+      message:
+        user.isLockedOut
+          ? "You have been locked out for repeated tab switching."
+          : `Warning ${user.tabSwitchCount}/1 — Do not switch tabs again or you will be locked out.`,
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to report violation", details: err.message });
+  }
+};
