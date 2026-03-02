@@ -1,15 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import axios from '../api';
 import { useNavigate } from 'react-router-dom';
 import useAntiCheat from '../hooks/useAntiCheat';
 
-// Language options with display names
 const LANGUAGES = [
   { id: 'c', name: 'C' },
   { id: 'cpp', name: 'C++' },
   { id: 'java', name: 'Java' },
   { id: 'python', name: 'Python' },
-  { id: 'javascript', name: 'JavaScript' },
 ];
 
 export default function Round2() {
@@ -26,78 +24,136 @@ export default function Round2() {
   const [showTestCases, setShowTestCases] = useState(false);
   const [solvedProblems, setSolvedProblems] = useState(new Set());
   const [totalMistakes, setTotalMistakes] = useState(0);
+  const [timerDuration, setTimerDuration] = useState(2700);
   const navigate = useNavigate();
   const userId = localStorage.getItem('userId');
   const { warnings, isLockedOut, MAX_WARNINGS } = useAntiCheat(userId);
+  const timerFetchedRef = useRef(false);
 
   const formatTime = (seconds) => {
-    const hrs = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = Math.floor(seconds % 60);
-
+    const secs = Math.max(0, Math.floor(seconds));
+    const hrs = Math.floor(secs / 3600);
+    const mins = Math.floor((secs % 3600) / 60);
+    const s = Math.floor(secs % 60);
     if (hrs > 0) {
-      return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      return `${hrs}:${mins.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     }
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
+    return `${mins}:${s.toString().padStart(2, '0')}`;
   };
 
-  // Fetch problems with selected language
+  const fetchTimer = async () => {
+    try {
+      const res = await axios.get(`/api/users/${userId}/timer?round=2`);
+      const { remaining, duration, timerStart } = res.data;
+      setTimerDuration(duration || 2700);
+      setElapsedTime(remaining);
+      if (timerStart) {
+        setStartTime(new Date(timerStart));
+      }
+      timerFetchedRef.current = true;
+      return res.data;
+    } catch (err) {
+      console.error('Error fetching timer:', err);
+      setElapsedTime(2700);
+      return null;
+    }
+  };
+
   const fetchProblems = async (language) => {
     try {
       const res = await axios.get(`/api/problems/round/2?language=${language}`);
       const problemsData = res.data;
-
-      // Handle both array and single object responses
       const problemsArray = Array.isArray(problemsData) ? problemsData : [problemsData];
       setProblems(problemsArray);
-
       if (problemsArray.length > 0) {
         setProblem(problemsArray[0]);
         setCode(problemsArray[0].starterCode || '');
       }
-      setStartTime(Date.now());
     } catch (err) {
       console.error('Error fetching problems:', err);
       alert('Failed to load problems. Please refresh the page.');
-      setStartTime(Date.now());
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle problem selection
+  useEffect(() => {
+    const init = async () => {
+      try {
+        await axios.post(`/api/users/${userId}/timer/start`, { round: 2, duration: 2700 });
+      } catch (err) {}
+      await fetchTimer();
+      await fetchProblems(selectedLanguage);
+    };
+    init();
+  }, []);
+
+  // Handle problem selection - ensure proper state update
   const handleProblemSelect = (index) => {
-    setSelectedProblemIndex(index);
-    if (problems[index]) {
-      setProblem(problems[index]);
-      setCode(problems[index].starterCode || '');
+    const selectedProblem = problems[index];
+    if (selectedProblem) {
+      setSelectedProblemIndex(index);
+      setProblem(selectedProblem);
+      setCode(selectedProblem.starterCode || '');
       setMistakes(0);
     }
   };
 
   useEffect(() => {
-    fetchProblems(selectedLanguage);
-  }, []);
-
-  useEffect(() => {
-    if (!loading && startTime) {
+    if (!loading && timerFetchedRef.current) {
       const timer = setInterval(() => {
-        setElapsedTime((Date.now() - startTime) / 1000);
+        axios.get(`/api/users/${userId}/timer?round=2`)
+          .then(res => {
+            const { remaining, isExpired } = res.data;
+            setElapsedTime(remaining);
+            if (isExpired) {
+              alert('Time is up! Round 2 has ended.');
+              navigate('/round-complete', { state: { timeTaken: timerDuration, round: 2 } });
+            }
+          })
+          .catch(err => { console.error('Error fetching timer:', err); });
       }, 1000);
       return () => clearInterval(timer);
     }
-  }, [loading, startTime]);
+  }, [loading, userId, timerDuration, navigate]);
 
+  // Handle language change - keep current problem but update code for new language
   const handleLanguageChange = async (e) => {
     const newLang = e.target.value;
+    const currentProblemIndex = selectedProblemIndex;
+    const currentProblem = problems[currentProblemIndex];
+    
     setSelectedLanguage(newLang);
-    setLoading(true);
-    await fetchProblems(newLang);
+    
+    // Fetch problems for new language but keep current selection
+    try {
+      const res = await axios.get(`/api/problems/round/2?language=${newLang}`);
+      const problemsData = res.data;
+      const problemsArray = Array.isArray(problemsData) ? problemsData : [problemsData];
+      setProblems(problemsArray);
+
+      // Find the same problem in the new language by matching title
+      const sameProblem = problemsArray.find(p => p.title === currentProblem?.title);
+      if (sameProblem) {
+        const newIndex = problemsArray.findIndex(p => p.title === currentProblem.title);
+        setSelectedProblemIndex(newIndex);
+        setProblem(sameProblem);
+        setCode(sameProblem.starterCode || '');
+      } else if (problemsArray.length > 0) {
+        setSelectedProblemIndex(0);
+        setProblem(problemsArray[0]);
+        setCode(problemsArray[0].starterCode || '');
+      }
+    } catch (err) {
+      console.error('Error changing language:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
+  // Allow copy/paste for user convenience
   const handleCopyPaste = (e) => {
-    e.preventDefault();
-    alert('Copy/Paste is not allowed during the contest!');
+    // Copy/paste is allowed
   };
 
   const toggleFullscreen = () => {
@@ -114,66 +170,41 @@ export default function Round2() {
     try {
       const userId = localStorage.getItem('userId');
       const userName = localStorage.getItem('userName');
-
       const res = await axios.post('/api/submissions', {
         problemId: problem?._id || null,
         code,
         language: selectedLanguage,
         userId
       });
-
       const result = res.data;
       const status = result.result?.summary?.allPassed ? 'Accepted' : result.status;
 
       if (status === 'Accepted') {
-        // Mark this problem as solved
         const newSolvedProblems = new Set(solvedProblems);
         newSolvedProblems.add(problem._id);
         setSolvedProblems(newSolvedProblems);
-
-        // Check if all problems are solved
         const allSolved = problems.every(p => newSolvedProblems.has(p._id));
-
         if (allSolved) {
-          // All problems solved - go to round completion
-          const elapsed = (Date.now() - startTime) / 1000;
+          const elapsed = timerDuration - elapsedTime;
           const penalty = totalMistakes * 5;
           const total = elapsed + penalty;
           await axios.post('/api/contests/end', { name: userName, round: 2, timeTaken: total });
-
-          navigate('/round-complete', {
-            state: {
-              timeTaken: elapsed,
-              mistakes: totalMistakes,
-              penalty,
-              round: 2
-            }
-          });
+          navigate('/round-complete', { state: { timeTaken: elapsed, mistakes: totalMistakes, penalty, round: 2 } });
         } else {
-          // Some problems still unsolved - find next unsolved problem
           alert('Correct! Moving to next problem...');
-
-          // Find next unsolved problem
           const nextIndex = problems.findIndex(p => !newSolvedProblems.has(p._id));
-          if (nextIndex !== -1) {
-            handleProblemSelect(nextIndex);
-          }
+          if (nextIndex !== -1) { handleProblemSelect(nextIndex); }
         }
       } else {
         const newMistakes = mistakes + 1;
         setMistakes(newMistakes);
         setTotalMistakes(totalMistakes + 1);
-
         if (result.result?.results) {
           const failedTest = result.result.results.find(r => !r.isPassed);
           if (failedTest) {
-            alert(`Wrong Answer!\nTest Case ${failedTest.testCaseNumber}:\nInput: ${failedTest.input}\nExpected: ${failedTest.expectedOutput}\nGot: ${failedTest.actualOutput}`);
-          } else {
-            alert('Not correct yet, try again.');
-          }
-        } else {
-          alert('Not correct yet, try again.');
-        }
+            alert(`Wrong Answer! Test Case ${failedTest.testCaseNumber}: Input: ${failedTest.input} Expected: ${failedTest.expectedOutput} Got: ${failedTest.actualOutput}`);
+          } else { alert('Not correct yet, try again.'); }
+        } else { alert('Not correct yet, try again.'); }
       }
     } catch (err) {
       console.error(err);
@@ -184,153 +215,23 @@ export default function Round2() {
     }
   };
 
-  if (loading) {
-    return <div className="container">Loading problem...</div>;
-  }
+  if (loading) { return <div className="container">Loading problem...</div>; }
 
   return (
     <div className="round-page" onContextMenu={handleCopyPaste}>
       <div className="round-header">
         <h2>Round 2 - Solve the Problem</h2>
-        <div className="timer">
-          Time: {formatTime(elapsedTime)} | Mistakes: {totalMistakes} | Solved: {solvedProblems.size}/{problems.length}
-        </div>
-        <button onClick={toggleFullscreen} className="fullscreen-btn">
-          {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
-        </button>
+        <div className="timer">Time: {formatTime(elapsedTime)} | Mistakes: {totalMistakes} | Solved: {solvedProblems.size}/{problems.length}</div>
+        <button onClick={toggleFullscreen} className="fullscreen-btn">{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</button>
       </div>
-
-      {/* Anti-cheat warning banner */}
-      {warnings > 0 && !isLockedOut && (
-        <div className="warning-banner">
-          ⚠️ Warning! Tab switch detected. If you switch again you will be <strong>locked out</strong>.
-        </div>
-      )}
-
-      {/* Lockout overlay */}
-      {isLockedOut && (
-        <div className="lockout-overlay">
-          <div className="lockout-content">
-            <h2>🚫 You Have Been Locked Out</h2>
-            <p>Multiple tab switches were detected. Your session has been terminated.</p>
-            <p>Please contact a coordinator if you believe this is an error.</p>
-          </div>
-        </div>
-      )}
-
-      {/* Problem Selector */}
-      {problems.length > 1 && (
-        <div className="problem-selector">
-          <label htmlFor="problem-select">Select Problem: </label>
-          <select
-            id="problem-select"
-            value={selectedProblemIndex}
-            onChange={(e) => handleProblemSelect(parseInt(e.target.value))}
-          >
-            {problems.map((p, index) => (
-              <option key={p._id || index} value={index}>
-                {solvedProblems.has(p._id) ? '✓ ' : '○ '}{p.title}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
-
+      {warnings > 0 && !isLockedOut && <div className="warning-banner">Warning! Tab switch detected.</div>}
+      {isLockedOut && <div className="lockout-overlay"><div className="lockout-content"><h2>Locked Out</h2><p>Multiple tab switches detected.</p></div></div>}
+      {problems.length > 1 && <div className="problem-selector"><label>Select Problem: </label><select value={selectedProblemIndex} onChange={(e) => handleProblemSelect(parseInt(e.target.value))}>{problems.map((p, i) => (<option key={p._id || i} value={i}>{solvedProblems.has(p._id) ? '✓ ' : '○ '}{p.title}</option>))}</select></div>}
       <div className="round-content-wrapper">
-        {problem && (
-          <div className="problem-description">
-            <h3>{problem.title}</h3>
-            <p>{problem.description}</p>
-
-            {problem.inputFormat && (
-              <p><strong>Input Format:</strong> {problem.inputFormat}</p>
-            )}
-
-            {problem.outputFormat && (
-              <p><strong>Output Format:</strong> {problem.outputFormat}</p>
-            )}
-
-            {problem.constraints && (
-              <p><strong>Constraints:</strong> {problem.constraints}</p>
-            )}
-
-            {problem.sampleInput && (
-              <div>
-                <strong>Sample Input:</strong>
-                <pre style={{ background: '#f4f4f4', padding: '10px' }}>{problem.sampleInput}</pre>
-              </div>
-            )}
-
-            {problem.sampleOutput && (
-              <div>
-                <strong>Sample Output:</strong>
-                <pre style={{ background: '#f4f4f4', padding: '10px' }}>{problem.sampleOutput}</pre>
-              </div>
-            )}
-
-            {problem.testCases && problem.testCases.length > 0 && (
-              <button
-                onClick={() => setShowTestCases(!showTestCases)}
-                style={{ marginTop: '10px' }}
-              >
-                {showTestCases ? 'Hide' : 'Show'} Test Cases
-              </button>
-            )}
-
-            {showTestCases && problem.testCases && (
-              <div style={{ marginTop: '10px' }}>
-                <h4>Test Cases:</h4>
-                {problem.testCases.map((tc, i) => (
-                  <div key={i} style={{ marginBottom: '10px', border: '1px solid #ddd', padding: '10px' }}>
-                    <strong>Test Case {i + 1}:</strong>
-                    <br />
-                    Input: <pre style={{ display: 'inline' }}>{tc.input}</pre>
-                    <br />
-                    Output: <pre style={{ display: 'inline' }}>{tc.output}</pre>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        <div className="language-selector">
-          <label htmlFor="language">Select Language: </label>
-          <select
-            id="language"
-            value={selectedLanguage}
-            onChange={handleLanguageChange}
-          >
-            {LANGUAGES.map(lang => (
-              <option key={lang.id} value={lang.id}>
-                {lang.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="code-editor-wrapper">
-          <textarea
-            className="code-textarea"
-            rows={15}
-            cols={60}
-            value={code}
-            onChange={e => setCode(e.target.value)}
-            onCopy={handleCopyPaste}
-            onCut={handleCopyPaste}
-            onPaste={handleCopyPaste}
-            draggable={false}
-          />
-        </div>
-
-        <div className="round-actions">
-          <button onClick={handleSubmit}>
-            Submit
-          </button>
-          <button onClick={() => setCode(problem?.starterCode || '')}>
-            Reset Code
-          </button>
-        </div>
+        {problem && <div className="problem-description"><h3>{problem.title}</h3><p>{problem.description}</p>{problem.inputFormat && <p><strong>Input Format:</strong> {problem.inputFormat}</p>}{problem.outputFormat && <p><strong>Output Format:</strong> {problem.outputFormat}</p>}{problem.constraints && <p><strong>Constraints:</strong> {problem.constraints}</p>}{problem.sampleInput && <div><strong>Sample Input:</strong><pre style={{background:'#f4f4f4',padding:'10px'}}>{problem.sampleInput}</pre></div>}{problem.sampleOutput && <div><strong>Sample Output:</strong><pre style={{background:'#f4f4f4',padding:'10px'}}>{problem.sampleOutput}</pre></div>}{problem.testCases && problem.testCases.length > 0 && <button onClick={() => setShowTestCases(!showTestCases)} style={{marginTop:'10px'}}>{showTestCases ? 'Hide' : 'Show'} Test Cases</button>}{showTestCases && problem.testCases && <div style={{marginTop:'10px'}}><h4>Test Cases:</h4>{problem.testCases.map((tc, i) => (<div key={i} style={{marginBottom:'10px',border:'1px solid #ddd',padding:'10px'}}><strong>Test Case {i+1}:</strong><br/>Input: <pre style={{display:'inline'}}>{tc.input}</pre><br/>Output: <pre style={{display:'inline'}}>{tc.output}</pre></div>))}</div>}</div>}
+        <div className="language-selector"><label>Select Language: </label><select id="language" value={selectedLanguage} onChange={handleLanguageChange}>{LANGUAGES.map(lang => (<option key={lang.id} value={lang.id}>{lang.name}</option>))}</select></div>
+        <div className="code-editor-wrapper"><textarea className="code-textarea" rows={15} cols={60} value={code} onChange={e => setCode(e.target.value)} onCopy={handleCopyPaste} onCut={handleCopyPaste} onPaste={handleCopyPaste} draggable={false} /></div>
+        <div className="round-actions"><button onClick={handleSubmit}>Submit</button><button onClick={() => setCode(problem?.starterCode || '')}>Reset Code</button></div>
       </div>
     </div>
   );

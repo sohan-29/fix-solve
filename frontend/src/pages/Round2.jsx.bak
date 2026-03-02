@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import axios from '../api';
 import { useNavigate } from 'react-router-dom';
 import useAntiCheat from '../hooks/useAntiCheat';
@@ -9,9 +9,10 @@ const LANGUAGES = [
   { id: 'cpp', name: 'C++' },
   { id: 'java', name: 'Java' },
   { id: 'python', name: 'Python' },
+  { id: 'javascript', name: 'JavaScript' },
 ];
 
-export default function Round1() {
+export default function Round2() {
   const [code, setCode] = useState('');
   const [problems, setProblems] = useState([]);
   const [problem, setProblem] = useState(null);
@@ -22,53 +23,28 @@ export default function Round1() {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [selectedLanguage, setSelectedLanguage] = useState('c');
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showTestCases, setShowTestCases] = useState(false);
   const [solvedProblems, setSolvedProblems] = useState(new Set());
   const [totalMistakes, setTotalMistakes] = useState(0);
-  const [timerDuration, setTimerDuration] = useState(1800); // Default 30 min
   const navigate = useNavigate();
   const userId = localStorage.getItem('userId');
   const { warnings, isLockedOut, MAX_WARNINGS } = useAntiCheat(userId);
-  const timerFetchedRef = useRef(false);
 
-  // Format time as h:m:s (countdown style - shows remaining time)
   const formatTime = (seconds) => {
-    const secs = Math.max(0, Math.floor(seconds));
-    const hrs = Math.floor(secs / 3600);
-    const mins = Math.floor((secs % 3600) / 60);
-    const s = Math.floor(secs % 60);
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
 
     if (hrs > 0) {
-      return `${hrs}:${mins.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+      return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
     }
-    return `${mins}:${s.toString().padStart(2, '0')}`;
-  };
-
-  // Fetch timer from backend
-  const fetchTimer = async () => {
-    try {
-      const res = await axios.get(`/api/users/${userId}/timer?round=1`);
-      const { remaining, duration, timerStart } = res.data;
-      
-      setTimerDuration(duration || 1800);
-      setElapsedTime(remaining);
-      
-      if (timerStart) {
-        setStartTime(new Date(timerStart));
-      }
-      
-      timerFetchedRef.current = true;
-      return res.data;
-    } catch (err) {
-      console.error('Error fetching timer:', err);
-      setElapsedTime(1800);
-      return null;
-    }
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   // Fetch problems with selected language
   const fetchProblems = async (language) => {
     try {
-      const res = await axios.get(`/api/problems/round/1?language=${language}`);
+      const res = await axios.get(`/api/problems/round/2?language=${language}`);
       const problemsData = res.data;
 
       // Handle both array and single object responses
@@ -79,109 +55,51 @@ export default function Round1() {
         setProblem(problemsArray[0]);
         setCode(problemsArray[0].starterCode || '');
       }
+      setStartTime(Date.now());
     } catch (err) {
       console.error('Error fetching problems:', err);
       alert('Failed to load problems. Please refresh the page.');
+      setStartTime(Date.now());
     } finally {
       setLoading(false);
     }
   };
 
-  // Initialize - fetch timer first, then problems
-  useEffect(() => {
-    const init = async () => {
-      // First, try to start timer if not started (for new users)
-      try {
-        await axios.post(`/api/users/${userId}/timer/start`, { round: 1, duration: 1800 });
-      } catch (err) {
-        // Timer might already be started, ignore error
-      }
-      
-      // Then fetch the timer
-      await fetchTimer();
-      
-      // Finally fetch problems
-      await fetchProblems(selectedLanguage);
-    };
-    
-    init();
-  }, []);
-
-  // Handle problem selection - ensure proper state update
+  // Handle problem selection
   const handleProblemSelect = (index) => {
-    const selectedProblem = problems[index];
-    if (selectedProblem) {
-      setSelectedProblemIndex(index);
-      setProblem(selectedProblem);
-      setCode(selectedProblem.starterCode || '');
+    setSelectedProblemIndex(index);
+    if (problems[index]) {
+      setProblem(problems[index]);
+      setCode(problems[index].starterCode || '');
       setMistakes(0);
     }
   };
 
-  // Timer effect - uses backend-controlled timer (updates every second)
   useEffect(() => {
-    if (!loading && timerFetchedRef.current) {
+    fetchProblems(selectedLanguage);
+  }, []);
+
+  useEffect(() => {
+    if (!loading && startTime) {
       const timer = setInterval(() => {
-        axios.get(`/api/users/${userId}/timer?round=1`)
-          .then(res => {
-            const { remaining, isExpired } = res.data;
-            setElapsedTime(remaining);
-            
-            if (isExpired) {
-              alert('Time is up! Round 1 has ended.');
-              navigate('/round-complete', {
-                state: { timeTaken: timerDuration, round: 1 }
-              });
-            }
-          })
-          .catch(err => {
-            console.error('Error fetching timer:', err);
-          });
+        setElapsedTime((Date.now() - startTime) / 1000);
       }, 1000);
       return () => clearInterval(timer);
     }
-  }, [loading, userId, timerDuration, navigate]);
+  }, [loading, startTime]);
 
-  // Handle language change - keep current problem but update code for new language
   const handleLanguageChange = async (e) => {
     const newLang = e.target.value;
-    const currentProblemIndex = selectedProblemIndex;
-    const currentProblem = problems[currentProblemIndex];
-    
     setSelectedLanguage(newLang);
-    
-    // Fetch problems for new language but keep current selection
-    try {
-      const res = await axios.get(`/api/problems/round/1?language=${newLang}`);
-      const problemsData = res.data;
-      const problemsArray = Array.isArray(problemsData) ? problemsData : [problemsData];
-      setProblems(problemsArray);
-
-      // Find the same problem in the new language by matching title
-      const sameProblem = problemsArray.find(p => p.title === currentProblem?.title);
-      if (sameProblem) {
-        const newIndex = problemsArray.findIndex(p => p.title === currentProblem.title);
-        setSelectedProblemIndex(newIndex);
-        setProblem(sameProblem);
-        setCode(sameProblem.starterCode || '');
-      } else if (problemsArray.length > 0) {
-        setSelectedProblemIndex(0);
-        setProblem(problemsArray[0]);
-        setCode(problemsArray[0].starterCode || '');
-      }
-    } catch (err) {
-      console.error('Error changing language:', err);
-    } finally {
-      setLoading(false);
-    }
+    setLoading(true);
+    await fetchProblems(newLang);
   };
 
-  // Allow copy/paste for user convenience
   const handleCopyPaste = (e) => {
-    // Copy/paste is allowed
+    e.preventDefault();
+    alert('Copy/Paste is not allowed during the contest!');
   };
 
-  // Toggle fullscreen
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen();
@@ -221,14 +139,14 @@ export default function Round1() {
           const elapsed = (Date.now() - startTime) / 1000;
           const penalty = totalMistakes * 5;
           const total = elapsed + penalty;
-          await axios.post('/api/contests/end', { name: userName, round: 1, timeTaken: total });
+          await axios.post('/api/contests/end', { name: userName, round: 2, timeTaken: total });
 
           navigate('/round-complete', {
             state: {
               timeTaken: elapsed,
               mistakes: totalMistakes,
               penalty,
-              round: 1
+              round: 2
             }
           });
         } else {
@@ -273,7 +191,7 @@ export default function Round1() {
   return (
     <div className="round-page" onContextMenu={handleCopyPaste}>
       <div className="round-header">
-        <h2>Round 1 - Debug the Code</h2>
+        <h2>Round 2 - Solve the Problem</h2>
         <div className="timer">
           Time: {formatTime(elapsedTime)} | Mistakes: {totalMistakes} | Solved: {solvedProblems.size}/{problems.length}
         </div>
@@ -323,28 +241,59 @@ export default function Round1() {
           <div className="problem-description">
             <h3>{problem.title}</h3>
             <p>{problem.description}</p>
+
             {problem.inputFormat && (
               <p><strong>Input Format:</strong> {problem.inputFormat}</p>
             )}
+
             {problem.outputFormat && (
               <p><strong>Output Format:</strong> {problem.outputFormat}</p>
             )}
+
+            {problem.constraints && (
+              <p><strong>Constraints:</strong> {problem.constraints}</p>
+            )}
+
             {problem.sampleInput && (
               <div>
                 <strong>Sample Input:</strong>
                 <pre style={{ background: '#f4f4f4', padding: '10px' }}>{problem.sampleInput}</pre>
               </div>
             )}
+
             {problem.sampleOutput && (
               <div>
                 <strong>Sample Output:</strong>
                 <pre style={{ background: '#f4f4f4', padding: '10px' }}>{problem.sampleOutput}</pre>
               </div>
             )}
+
+            {problem.testCases && problem.testCases.length > 0 && (
+              <button
+                onClick={() => setShowTestCases(!showTestCases)}
+                style={{ marginTop: '10px' }}
+              >
+                {showTestCases ? 'Hide' : 'Show'} Test Cases
+              </button>
+            )}
+
+            {showTestCases && problem.testCases && (
+              <div style={{ marginTop: '10px' }}>
+                <h4>Test Cases:</h4>
+                {problem.testCases.map((tc, i) => (
+                  <div key={i} style={{ marginBottom: '10px', border: '1px solid #ddd', padding: '10px' }}>
+                    <strong>Test Case {i + 1}:</strong>
+                    <br />
+                    Input: <pre style={{ display: 'inline' }}>{tc.input}</pre>
+                    <br />
+                    Output: <pre style={{ display: 'inline' }}>{tc.output}</pre>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
-        {/* Language Selector */}
         <div className="language-selector">
           <label htmlFor="language">Select Language: </label>
           <select

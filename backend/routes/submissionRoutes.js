@@ -1,6 +1,6 @@
 const express = require('express');
 const { createSubmission } = require('../controllers/submissionController');
-const Submission = require('../models/Submission');
+const Submission = require('../models/submission');
 
 const router = express.Router();
 
