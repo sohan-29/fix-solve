@@ -1,67 +1,79 @@
-# Fix & Solve - Implementation TODO
+# TODO.md - Fix & Solve Application Updates
 
-## Phase 1: Backend Enhancements
+## Completed Features
 
-- [x] 1.1 Update Problem Model (add roundType, starterCode, hiddenTestCases)
-- [x] 1.2 Enhance Judge0 Client (multi-test case support)
-- [x] 1.3 Update Submission Controller (run all test cases, validate output)
-- [x] 1.4 Update Problem Controller (add getProblemByRound endpoint)
-- [x] 1.5 Add route for getProblemByRound
+### 1. Round Completion Pages
+- ✅ Added RoundCompletion page that shows completion time for each round
+- ✅ Shows mistakes count and penalty time
+- ✅ Shows instructions for next round (after Round 1)
+- ✅ Auto-navigates to next round after countdown (10 seconds)
+- ✅ Manual button to proceed to next round immediately
 
-## Phase 2: Frontend Updates
+### 2. Timer Display
+- ✅ Added real-time timer display in Round 1 and Round 2
+- ✅ Shows elapsed time in seconds, updating every 100ms
+- ✅ Shows mistake count alongside timer
 
-- [x] 2.1 Update Round1.jsx (fetch problem from backend)
-- [x] 2.2 Update Round2.jsx (fetch problem from backend)
+### 3. Penalty System
+- ✅ Each wrong submission adds 5 second penalty
+- ✅ Penalty is calculated and shown on completion page
+- ✅ Total time = elapsed time + (mistakes × 5 seconds)
 
-## Phase 3: Production Readiness
+### 4. Admin Panel
+- ✅ Added password protection (default password: admin123)
+- ✅ Can add, edit, and delete problems
+- ✅ Can view all submissions
+- ✅ Can view leaderboard with rankings
+- ✅ Supports time limit, difficulty, and complexity fields
+- ✅ Supports test cases and hidden test cases
 
-- [x] 3.1 Add proper CORS configuration
-- [x] 3.2 Add .env.example
-- [x] 3.3 Create seed data for sample problems
+### 5. Results Page
+- ✅ Shows sorted leaderboard by total time
+- ✅ Displays Round 1 time, Round 2 time, and total time
+- ✅ Shows rank for each participant
+- ✅ Highlights top 3 positions (gold, silver, bronze)
 
-## What's Completed:
+### 6. Flow Improvements
+- ✅ Home → Instructions → Round1 → RoundCompletion → Round2 → RoundCompletion → Results
+- ✅ Route path changed from `/round-completion` to `/round-complete` for consistency
+- ✅ Instructions page explains the rules before starting
 
-1. **Problem Model**: Added `roundType`, `starterCode`, and `hiddenTestCases` fields
-2. **Judge0 Client**: Enhanced to run multiple test cases and validate outputs
-3. **Submission Controller**: Updated to fetch problems and run all test cases
-4. **Problem Controller**: Added `getProblemByRound` and `getProblemById` endpoints
-5. **Round1.jsx**: Now fetches problem from backend with fallback
-6. **Round2.jsx**: Now fetches problem from backend with fallback
-7. **Server.js**: Added proper CORS config and health check endpoint
-8. **.env.example**: Created with all required environment variables
-9. **seed.js**: Created to populate sample problems
+## Backend Routes Available
+- ✅ POST /api/problems - Create problem
+- ✅ GET /api/problems - Get all problems
+- ✅ GET /api/problems/round/:round - Get problem by round
+- ✅ PUT /api/problems/:id - Update problem
+- ✅ DELETE /api/problems/:id - Delete problem
+- ✅ POST /api/submissions - Submit code
+- ✅ GET /api/submissions - Get all submissions
+- ✅ POST /api/contests/start - Start round
+- ✅ POST /api/contests/end - End round and save time
+- ✅ GET /api/users - Get leaderboard
 
-## To Run the Project:
+## Admin Panel Features
+- Problem management (CRUD)
+- Time limit configuration
+- Difficulty level (Easy, Medium, Hard)
+- Time complexity display field
+- Visible and hidden test cases
+- Bug code for Round 1
+- Starter code for Round 2
 
-1. **Setup MongoDB** (if not running):
-   
+## Default Admin Password
 ```
-   mongod
-   
+admin123
 ```
 
-2. **Start Judge0** (in Docker):
-   
-```
-   docker run -d --name judge0 -p 2358:2358 judge0/judge0:latest
-   
-```
-
-3. **Backend Setup**:
-   
-```
-   cd backend
-   cp .env.example .env
-   # Edit .env with your MongoDB URI
-   npm install
-   node seed.js  # Seed sample problems
-   npm start
-   
-```
-
-4. **Frontend Setup**:
-   
-```
-   cd frontend
-   npm install
-   npm run dev
+## How to Test
+1. Start MongoDB
+2. Start backend: `cd backend && npm start`
+3. Start frontend: `cd frontend && npm run dev`
+4. Navigate to http://localhost:5173
+5. Enter name and start contest
+6. Read instructions and proceed to Round 1
+7. Solve the problem and submit
+8. View completion page with stats
+9. Proceed to Round 2
+10. Solve the problem and submit
+11. View final results
+12. Access admin panel at /admin with password "admin123"

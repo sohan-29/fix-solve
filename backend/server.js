@@ -40,62 +40,12 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Seed endpoint - POST to /api/seed to populate problems
+// Seed endpoint - POST to /api/seed to clear database
+// Use Admin panel to add problems
 app.post('/api/seed', async (req, res) => {
   try {
-    const problems = [
-      {
-        title: 'Fix the Sum Function',
-        description: 'The following function should return the sum of two numbers, but it has a bug. Find and fix it!',
-        roundType: 1,
-        inputFormat: 'Two numbers a and b',
-        outputFormat: 'Sum of a and b',
-        constraints: 'a, b can be any integers',
-        sampleInput: '5, 3',
-        sampleOutput: '8',
-        bugCode: `// Fix the bug in this function
-function add(a, b) {
-  // should return sum
-  return a - b;
-}`,
-        testCases: [
-          { input: '5\n3', output: '8' },
-          { input: '10\n20', output: '30' },
-          { input: '-5\n5', output: '0' }
-        ],
-        hiddenTestCases: [
-          { input: '100\n200', output: '300' },
-          { input: '0\n0', output: '0' }
-        ]
-      },
-      {
-        title: 'Factorial',
-        description: 'Write a function that returns the factorial of a given number n. factorial(n) = n * (n-1) * (n-2) * ... * 1',
-        roundType: 2,
-        inputFormat: 'A single integer n (0 <= n <= 20)',
-        outputFormat: 'The factorial of n',
-        constraints: '0 <= n <= 20',
-        sampleInput: '5',
-        sampleOutput: '120',
-        starterCode: `// Write a function that returns the factorial of a number
-function factorial(n) {
-  // your code here
-}`,
-        testCases: [
-          { input: '5', output: '120' },
-          { input: '0', output: '1' },
-          { input: '10', output: '3628800' }
-        ],
-        hiddenTestCases: [
-          { input: '20', output: '2432902008176640000' },
-          { input: '1', output: '1' }
-        ]
-      }
-    ];
-
     await Problem.deleteMany({});
-    await Problem.insertMany(problems);
-    res.json({ message: 'Database seeded successfully', count: problems.length });
+    res.json({ message: 'Database cleared. Please use Admin panel to add problems.' });
   } catch (error) {
     console.error('Seed error:', error);
     res.status(500).json({ error: error.message });
