@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { spawnSync } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 const vm = require('vm');
 
 const JUDGE0_URL = process.env.JUDGE0_URL || 'http://localhost:2358';
@@ -92,6 +92,7 @@ const wrapCCode = (code, functionName, inputValues) => {
   let mainCode = '';
   
   if (returnType === 'void') {
+    
     if (inputValues.length === 0) {
       mainCode = `
 int main() {
@@ -411,24 +412,38 @@ const isJudge0Available = async () => {
   }
 };
 
-// Execute Python locally - uses spawn for better isolation
+// Execute Python locally - uses async spawn for better concurrency
 const executePythonLocally = (sourceCode, stdin = '') => {
-  try {
-    const result = spawnSync('python', ['-c', sourceCode], {
-      input: stdin,
+  return new Promise((resolve) => {
+    const python = spawn('python', ['-c', sourceCode], {
       timeout: 10000,
       encoding: 'utf-8',
       maxBuffer: 10 * 1024 * 1024 // 10MB buffer
     });
     
-    return {
-      stdout: result.stdout || '',
-      stderr: result.stderr || '',
-      error: result.error
-    };
-  } catch (error) {
-    return { stdout: '', stderr: error.message, error };
-  }
+    let stdout = '';
+    let stderr = '';
+    
+    python.stdout.on('data', (data) => { stdout += data; });
+    python.stderr.on('data', (data) => { stderr += data; });
+    
+    python.on('close', (code) => {
+      resolve({
+        stdout,
+        stderr,
+        error: code !== 0 ? new Error(stderr || 'Execution failed') : null
+      });
+    });
+    
+    python.on('error', (error) => {
+      resolve({ stdout: '', stderr: error.message, error });
+    });
+    
+    if (stdin) {
+      python.stdin.write(stdin);
+      python.stdin.end();
+    }
+  });
 };
 
 // Execute C/C++ locally
@@ -523,10 +538,10 @@ const executeJavaLocally = (sourceCode, stdin = '') => {
 };
 
 // Local execution - supports concurrent users with isolated processes
-const executeLocally = (sourceCode, language, stdin = '') => {
+const executeLocally = async (sourceCode, language, stdin = '') => {
   switch (language.toLowerCase()) {
     case 'python':
-      return executePythonLocally(sourceCode, stdin);
+      return await executePythonLocally(sourceCode, stdin);
     case 'c':
       return executeCLocally(sourceCode, stdin, false);
     case 'cpp':
@@ -555,7 +570,7 @@ const submitCode = async (sourceCode, language, stdin = '') => {
   const judge0Available = await isJudge0Available();
   
   if (!judge0Available || !languageId) {
-    const localResult = executeLocally(wrappedCode, language, stdin);
+    const localResult = await executeLocally(wrappedCode, language, stdin);
     
     return {
       status: { 
@@ -578,7 +593,7 @@ const submitCode = async (sourceCode, language, stdin = '') => {
     
     return response.data;
   } catch (error) {
-    const localResult = executeLocally(wrappedCode, language, stdin);
+    const localResult = await executeLocally(wrappedCode, language, stdin);
     
     return {
       status: { 
@@ -607,7 +622,7 @@ const runAllTestCases = async (sourceCode, language, testCases) => {
   const testPromises = testCases.map(async (testCase, index) => {
     try {
       const wrappedCode = wrapCode(sourceCode, language, testCase.input);
-      const localResult = executeLocally(wrappedCode, language, testCase.input);
+      const localResult = await executeLocally(wrappedCode, language, testCase.input);
       
       const actualOutput = (localResult.stdout || '').trim();
       const expectedOutput = (testCase.output || '').trim();
