@@ -163,6 +163,8 @@ export default function Admin() {
     sampleOutput: '',
     starterCode: '',
     bugCode: '',
+    marks: 10,
+    complexityExpected: 'O(n)',
     starterCodeByLanguage: {
       javascript: '',
       c: '',
@@ -373,6 +375,8 @@ if __name__ == "__main__":
       sampleOutput: problem.sampleOutput || '',
       starterCode: problem.starterCode || '',
       bugCode: problem.bugCode || '',
+      marks: problem.marks || 10,
+      complexityExpected: problem.complexityExpected || 'O(n)',
       starterCodeByLanguage: problem.starterCodeByLanguage || {
         javascript: '', c: '', cpp: '', java: '', python: ''
       },
@@ -449,6 +453,8 @@ if __name__ == "__main__":
       sampleOutput: '',
       starterCode: '',
       bugCode: '',
+      marks: 10,
+      complexityExpected: 'O(n)',
       starterCodeByLanguage: {
         javascript: '', c: '', cpp: '', java: '', python: ''
       },
@@ -573,6 +579,36 @@ if __name__ == "__main__":
                     <option value={1}>Round 1 - Debugging</option>
                     <option value={2}>Round 2 - Coding</option>
                   </select>
+                </div>
+
+                {/* Marks Field */}
+                <div className="form-row">
+                  <label>Marks (Total for this question)</label>
+                  <input
+                    name="marks"
+                    type="number"
+                    value={formData.marks}
+                    onChange={handleInputChange}
+                    min="1"
+                    placeholder="e.g., 10"
+                  />
+                  <small style={{color: '#666', marginLeft: '10px'}}>
+                    Visible tests: 40% | Hidden tests: 60%
+                  </small>
+                </div>
+
+                {/* Expected Complexity Field */}
+                <div className="form-row">
+                  <label>Expected Time Complexity</label>
+                  <input
+                    name="complexityExpected"
+                    value={formData.complexityExpected}
+                    onChange={handleInputChange}
+                    placeholder="e.g., O(n), O(n²)"
+                  />
+                  <small style={{color: '#666', marginLeft: '10px'}}>
+                    For optimal code bonus (+1 mark)
+                  </small>
                 </div>
 
                 {/* Supported Languages */}
@@ -740,7 +776,7 @@ if __name__ == "__main__":
                 </div>
 
                 <div className="test-cases-section">
-                  <h4>Test Cases</h4>
+                  <h4>Test Cases (Visible - 40% marks)</h4>
                   {formData.testCases.map((tc, index) => (
                     <div key={index} className="test-case-row">
                       <input
@@ -762,7 +798,7 @@ if __name__ == "__main__":
                 </div>
 
                 <div className="test-cases-section">
-                  <h4>Hidden Test Cases (not shown to users)</h4>
+                  <h4>Hidden Test Cases (60% marks - not shown to users)</h4>
                   {formData.hiddenTestCases.map((tc, index) => (
                     <div key={index} className="test-case-row">
                       <input
@@ -809,6 +845,7 @@ if __name__ == "__main__":
                   <tr>
                     <th>Title</th>
                     <th>Round</th>
+                    <th>Marks</th>
                     <th>Languages</th>
                     <th>Difficulty</th>
                     <th>Actions</th>
@@ -819,6 +856,7 @@ if __name__ == "__main__":
                     <tr key={problem._id}>
                       <td>{problem.title}</td>
                       <td>{problem.roundType === 1 ? 'Debugging' : 'Coding'}</td>
+                      <td>{problem.marks || 10}</td>
                       <td>{problem.supportedLanguages?.join(', ') || 'C'}</td>
                       <td>{problem.difficulty}</td>
                       <td>
@@ -843,6 +881,7 @@ if __name__ == "__main__":
                   <th>Problem</th>
                   <th>Language</th>
                   <th>Status</th>
+                  <th>Marks</th>
                   <th>Time</th>
                   <th>Actions</th>
                 </tr>
@@ -854,6 +893,7 @@ if __name__ == "__main__":
                     <td>{sub.problem?.title || 'Unknown'}</td>
                     <td>{sub.language || 'N/A'}</td>
                     <td>{sub.status}</td>
+                    <td>{sub.marks || 0}</td>
                     <td>{new Date(sub.createdAt).toLocaleString()}</td>
                     <td>
                       <button 
@@ -873,26 +913,41 @@ if __name__ == "__main__":
 
         {activeTab === 'leaderboard' && (
           <div className="leaderboard-section">
-            <h2>Leaderboard</h2>
+            <h2>Leaderboard (Sorted: Marks → Time → Optimal)</h2>
             <table>
               <thead>
                 <tr>
                   <th>Name</th>
-                  <th>Round 1 Time</th>
-                  <th>Round 2 Time</th>
-                  <th>Total Time</th>
+                  <th>Marks</th>
+                  <th>Round 1</th>
+                  <th>Round 2</th>
+                  <th>Time</th>
+                  <th>Optimal</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {users
-                  .sort((a, b) => (a.totalTime || 0) - (b.totalTime || 0))
-                  .map(user => (
+                  .sort((a, b) => {
+                    // Primary: Marks (higher is better)
+                    if ((b.totalScore || 0) !== (a.totalScore || 0)) {
+                      return (b.totalScore || 0) - (a.totalScore || 0);
+                    }
+                    // Secondary: Time (lower is better)
+                    if ((a.totalTime || 0) !== (b.totalTime || 0)) {
+                      return (a.totalTime || 0) - (b.totalTime || 0);
+                    }
+                    // Tertiary: Optimal points (higher is better)
+                    return (b.totalOptimalPoints || 0) - (a.totalOptimalPoints || 0);
+                  })
+                  .map((user, index) => (
                     <tr key={user._id}>
                       <td>{user.name}</td>
-                      <td>{user.round1Time ? `${user.round1Time.toFixed(2)}s` : '-'}</td>
-                      <td>{user.round2Time ? `${user.round2Time.toFixed(2)}s` : '-'}</td>
+                      <td><strong>{user.totalScore?.toFixed(2) || '0.00'}</strong></td>
+                      <td>{user.round1Score?.toFixed(2) || '0.00'}</td>
+                      <td>{user.round2Score?.toFixed(2) || '0.00'}</td>
                       <td>{user.totalTime ? `${user.totalTime.toFixed(2)}s` : '-'}</td>
+                      <td>{user.totalOptimalPoints || 0}</td>
                       <td>
                         <button 
                           className="delete-btn"

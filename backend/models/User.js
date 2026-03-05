@@ -22,17 +22,38 @@ const UserSchema = new mongoose.Schema(
     round2ResetCount: { type: Number, default: 0 },
     retryAllowed: { type: Boolean, default: false }, // admin flips this to allow a re-entry
 
-    // --- Scoring (SRS Time-Decay Formula) ---
+    // --- Scoring (Marks-based System) ---
     round1Score: { type: Number, default: 0 },
     round2Score: { type: Number, default: 0 },
     totalScore: { type: Number, default: 0 },
     round1WrongSubmissions: { type: Number, default: 0 },
     round2WrongSubmissions: { type: Number, default: 0 },
+    // Negative marks tracking (every 3 wrong = -1)
+    round1NegativeMarks: { type: Number, default: 0 },
+    round2NegativeMarks: { type: Number, default: 0 },
 
     // Legacy time tracking (kept for leaderboard secondary sort)
     round1Time: { type: Number, default: 0 },
     round2Time: { type: Number, default: 0 },
     totalTime: { type: Number, default: 0 },
+
+    // --- Optimal Points (Bonus for best time complexity) ---
+    round1OptimalPoints: { type: Number, default: 0 },
+    round2OptimalPoints: { type: Number, default: 0 },
+    totalOptimalPoints: { type: Number, default: 0 },
+
+    // --- Submitted Code Storage (per problem per round) ---
+    // Maps problem ID to submitted code for Round 1
+    round1SubmittedCode: { type: Map, of: String, default: {} },
+    // Maps problem ID to submitted code for Round 2
+    round2SubmittedCode: { type: Map, of: String, default: {} },
+    // Maps problem ID to best submission marks for Round 1
+    round1BestSubmission: { type: Map, of: Number, default: {} },
+    // Maps problem ID to best submission marks for Round 2
+    round2BestSubmission: { type: Map, of: Number, default: {} },
+    // Maps problem ID to indicate if optimal solution was submitted
+    round1OptimalSubmitted: { type: Map, of: Boolean, default: {} },
+    round2OptimalSubmitted: { type: Map, of: Boolean, default: {} },
 
     // --- Anti-Cheat (Page Visibility API) ---
     tabSwitchCount: { type: Number, default: 0 },

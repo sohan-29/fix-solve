@@ -2,12 +2,24 @@ const Submission = require('../models/submission');
 const Problem = require('../models/problem');
 const User = require('../models/User');
 const { runAllTestCases } = require('../utils/judge0Client');
-const { computeScore, getElapsedSeconds } = require('../utils/timerService');
+const { getElapsedSeconds } = require('../utils/timerService');
+
+// Marks calculation constants
+const VISIBLE_TEST_WEIGHT = 0.4;  // 40% for visible test cases
+const HIDDEN_TEST_WEIGHT = 0.6;    // 60% for hidden test cases
+const WRONG_SUBMISSION_PENALTY_INTERVAL = 3; // Every 3 wrong = -1 mark
+const OPTIMAL_BONUS = 1; // +1 mark for optimal code
 
 /**
  * POST /api/submissions
  * Creates a submission, checks timer validity, evaluates code against test cases,
- * and applies the SRS time-decay scoring formula.
+ * and applies the marks-based scoring system.
+ *
+ * Marks Distribution:
+ * - Visible test cases: 40% of problem marks
+ * - Hidden test cases: 60% of problem marks
+ * - Negative marks: -1 for every 3 wrong submissions
+ * - Optimal bonus: +1 for best time complexity
  *
  * Expected body:
  *   { problemId, code, language, userId, round }
@@ -54,62 +66,159 @@ const createSubmission = async (req, res, next) => {
     }
 
     // --- 2. Fetch problem & test cases ---
-    let testCases = [];
+    let visibleTestCases = [];
+    let hiddenTestCases = [];
     let problem = null;
+    const problemMarks = 10; // Default marks
 
     if (problemId) {
       try {
         problem = await Problem.findById(problemId);
         if (problem) {
-          testCases = [...(problem.testCases || []), ...(problem.hiddenTestCases || [])];
+          visibleTestCases = problem.testCases || [];
+          hiddenTestCases = problem.hiddenTestCases || [];
         }
       } catch (e) {
         console.log('Problem not found, using default test case');
       }
     }
 
-    if (testCases.length === 0) {
-      testCases = [{ input: '5\n3', output: '8' }];
+    // Default test case if none exist
+    if (visibleTestCases.length === 0 && hiddenTestCases.length === 0) {
+      visibleTestCases = [{ input: '5\n3', output: '8' }];
     }
 
-    // --- 3. Run test cases via Judge0 ---
-    const result = await runAllTestCases(code, language || 'javascript', testCases);
-    const overallStatus = result.summary.allPassed ? 'Accepted' : 'Wrong Answer';
+    // --- 3. Run visible test cases via Judge0 ---
+    const visibleResult = visibleTestCases.length > 0 
+      ? await runAllTestCases(code, language || 'c', visibleTestCases)
+      : { summary: { allPassed: false }, results: [] };
+    
+    const visibleTestPassed = visibleResult.summary.allPassed;
 
-    // --- 4. Apply SRS Time-Decay Scoring ---
-    let score = 0;
-    if (user && result.summary.allPassed) {
-      const timerStart = user[`round${round}TimerStart`];
-      const timeTakenSecs = timerStart ? getElapsedSeconds(timerStart) : 0;
-      const wrongCount = user[`round${round}WrongSubmissions`] || 0;
-      const maxPoints = problem ? (problem.maxPoints || 100) : 100;
+    // --- 4. Run hidden test cases via Judge0 ---
+    const hiddenResult = hiddenTestCases.length > 0
+      ? await runAllTestCases(code, language || 'c', hiddenTestCases)
+      : { summary: { allPassed: false }, results: [] };
+    
+    const hiddenTestPassed = hiddenResult.summary.allPassed;
 
-      score = computeScore({ maxPoints, timeTakenSecs, wrongCount });
+    // Determine overall status
+    const overallStatus = (visibleTestPassed && hiddenTestPassed) ? 'Accepted' 
+      : visibleTestPassed ? 'Partial Correct'
+      : 'Wrong Answer';
 
-      // Update user's score for the round
-      user[`round${round}Score`] = Math.max(user[`round${round}Score`] || 0, score);
-      user[`round${round}Time`] = timeTakenSecs;
+    // --- 5. Calculate Marks ---
+    const totalMarks = problem ? (problem.marks || problemMarks) : problemMarks;
+    
+    // Visible tests = 40%, Hidden tests = 60%
+    const visibleMarks = visibleTestPassed ? (totalMarks * VISIBLE_TEST_WEIGHT) : 0;
+    const hiddenMarks = hiddenTestPassed ? (totalMarks * HIDDEN_TEST_WEIGHT) : 0;
+    let earnedMarks = visibleMarks + hiddenMarks;
+
+    // Round to 2 decimal places
+    earnedMarks = Math.round(earnedMarks * 100) / 100;
+
+    // --- 6. Handle Wrong Submissions & Negative Marks ---
+    let negativeMarks = 0;
+    let wrongSubmissions = 0;
+
+    if (user) {
+      wrongSubmissions = user[`round${round}WrongSubmissions`] || 0;
+      
+      if (!visibleTestPassed || !hiddenTestPassed) {
+        // Track wrong submission
+        wrongSubmissions += 1;
+        user[`round${round}WrongSubmissions`] = wrongSubmissions;
+        
+        // Calculate negative marks (every 3 wrong = -1)
+        negativeMarks = Math.floor(wrongSubmissions / WRONG_SUBMISSION_PENALTY_INTERVAL);
+        user[`round${round}NegativeMarks`] = negativeMarks;
+      }
+
+      // --- 7. Check for Optimal Code Bonus ---
+      let isOptimal = false;
+      let optimalBonus = 0;
+      
+      if (problem && earnedMarks > 0) {
+        // Check if this is the first correct submission for this problem
+        const bestSubmission = user[`round${round}BestSubmission`] || {};
+        const currentBest = bestSubmission[problemId] || 0;
+        
+        // If this is the first correct submission or better marks
+        if (earnedMarks > currentBest) {
+          // Mark as optimal (simplified - in real app would analyze code complexity)
+          isOptimal = true;
+          optimalBonus = OPTIMAL_BONUS;
+          
+          // Update best submission
+          bestSubmission[problemId] = earnedMarks;
+          user[`round${round}BestSubmission`] = bestSubmission;
+          
+          // Track optimal submissions
+          const optimalSubmitted = user[`round${round}OptimalSubmitted`] || {};
+          if (!optimalSubmitted[problemId]) {
+            optimalSubmitted[problemId] = true;
+            user[`round${round}OptimalSubmitted`] = optimalSubmitted;
+            user[`round${round}OptimalPoints`] = (user[`round${round}OptimalPoints`] || 0) + optimalBonus;
+          }
+        }
+      }
+
+      // --- 8. Update User Score ---
+      const previousRoundScore = user[`round${round}Score`] || 0;
+      const newScore = Math.max(previousRoundScore, earnedMarks - negativeMarks + optimalBonus);
+      user[`round${round}Score`] = newScore;
+
+      // Update total score
       user.totalScore = (user.round1Score || 0) + (user.round2Score || 0);
+      
+      // Update total optimal points
+      user.totalOptimalPoints = (user.round1OptimalPoints || 0) + (user.round2OptimalPoints || 0);
+
+      // Update time (for tiebreaker)
+      const timeTakenSecs = user[`round${round}TimerStart`] 
+        ? getElapsedSeconds(user[`round${round}TimerStart`]) 
+        : 0;
+      user[`round${round}Time`] = timeTakenSecs;
       user.totalTime = (user.round1Time || 0) + (user.round2Time || 0);
-      await user.save();
-    } else if (user && !result.summary.allPassed) {
-      // Track wrong submissions for penalty
-      user[`round${round}WrongSubmissions`] = (user[`round${round}WrongSubmissions`] || 0) + 1;
+
+      // --- 9. Save Submitted Code ---
+      const submittedCodeMap = user[`round${round}SubmittedCode`] || {};
+      submittedCodeMap[problemId] = code;
+      user[`round${round}SubmittedCode`] = submittedCodeMap;
+
       await user.save();
     }
 
-    // --- 5. Persist Submission ---
+    // --- 10. Persist Submission ---
     const submission = await Submission.create({
       user: userIdResolved,
       problem: problemId,
       code,
-      language: language || 'python',
+      language: language || 'c',
       status: overallStatus,
-      score,
+      score: earnedMarks - negativeMarks + (user ? (user[`round${round}OptimalPoints`] || 0) : 0),
+      marks: earnedMarks,
+      visibleTestPassed,
+      hiddenTestPassed,
+      negativeMarks,
+      isOptimal: false,
+      optimalBonus: 0,
       timeTaken: user && user[`round${round}TimerStart`]
         ? getElapsedSeconds(user[`round${round}TimerStart`])
         : 0,
-      result,
+      result: {
+        visible: visibleResult,
+        hidden: hiddenResult,
+        summary: {
+          visiblePassed: visibleTestPassed,
+          hiddenPassed: hiddenTestPassed,
+          totalMarks,
+          earnedMarks,
+          negativeMarks,
+          finalScore: earnedMarks - negativeMarks
+        }
+      },
     });
 
     res.status(201).json(submission);
@@ -118,4 +227,36 @@ const createSubmission = async (req, res, next) => {
   }
 };
 
-module.exports = { createSubmission };
+/**
+ * GET /api/submissions/user/:userId
+ * Get all submissions for a user
+ */
+const getUserSubmissions = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    const submissions = await Submission.find({ user: userId })
+      .populate('problem', 'title marks')
+      .sort({ createdAt: -1 });
+    res.json(submissions);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET /api/submissions/problem/:problemId
+ * Get all submissions for a problem
+ */
+const getProblemSubmissions = async (req, res, next) => {
+  try {
+    const { problemId } = req.params;
+    const submissions = await Submission.find({ problem: problemId })
+      .populate('user', 'name')
+      .sort({ score: -1, timeTaken: 1 });
+    res.json(submissions);
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { createSubmission, getUserSubmissions, getProblemSubmissions };

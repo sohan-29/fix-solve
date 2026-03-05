@@ -25,10 +25,13 @@ export default function Round1() {
   const [solvedProblems, setSolvedProblems] = useState(new Set());
   const [totalMistakes, setTotalMistakes] = useState(0);
   const [timerDuration, setTimerDuration] = useState(1800); // Default 30 min
+  const [isLocked, setIsLocked] = useState(false);
+  const [submissionResult, setSubmissionResult] = useState(null);
   const navigate = useNavigate();
   const userId = localStorage.getItem('userId');
   const { warnings, isLockedOut, MAX_WARNINGS } = useAntiCheat(userId);
   const timerFetchedRef = useRef(false);
+  const timerRef = useRef(null);
 
   // Format time as h:m:s (countdown style - shows remaining time)
   const formatTime = (seconds) => {
@@ -52,15 +55,55 @@ export default function Round1() {
       setTimerDuration(duration || 1800);
       setElapsedTime(remaining);
       
+      // Save to sessionStorage for persistence across refreshes
+      sessionStorage.setItem('round1Remaining', remaining.toString());
+      sessionStorage.setItem('round1Duration', (duration || 1800).toString());
+      
       if (timerStart) {
         setStartTime(new Date(timerStart));
+        sessionStorage.setItem('round1TimerStart', timerStart);
       }
       
       timerFetchedRef.current = true;
       return res.data;
     } catch (err) {
       console.error('Error fetching timer:', err);
-      setElapsedTime(1800);
+      // Try to load from sessionStorage as fallback
+      const savedRemaining = sessionStorage.getItem('round1Remaining');
+      const savedDuration = sessionStorage.getItem('round1Duration');
+      if (savedRemaining) {
+        setElapsedTime(parseInt(savedRemaining));
+        setTimerDuration(parseInt(savedDuration) || 1800);
+        timerFetchedRef.current = true;
+      } else {
+        setElapsedTime(1800);
+      }
+      return null;
+    }
+  };
+
+  // Check lock status on mount
+  const checkLockStatus = async () => {
+    try {
+      const res = await axios.get(`/api/users/${userId}`);
+      if (res.data.isLockedOut) {
+        setIsLocked(true);
+        sessionStorage.setItem('isLocked', 'true');
+      }
+    } catch (err) {
+      console.error('Error checking lock status:', err);
+    }
+  };
+
+  // Fetch submitted code for a problem
+  const fetchSubmittedCode = async (problemId) => {
+    try {
+      const res = await axios.get(`/api/users/${userId}`);
+      const userData = res.data;
+      const submittedCodeMap = userData.round1SubmittedCode || {};
+      return submittedCodeMap[problemId] || null;
+    } catch (err) {
+      console.error('Error fetching submitted code:', err);
       return null;
     }
   };
@@ -70,14 +113,14 @@ export default function Round1() {
     try {
       const res = await axios.get(`/api/problems/round/1?language=${language}`);
       const problemsData = res.data;
-
-      // Handle both array and single object responses
       const problemsArray = Array.isArray(problemsData) ? problemsData : [problemsData];
       setProblems(problemsArray);
 
       if (problemsArray.length > 0) {
         setProblem(problemsArray[0]);
-        setCode(problemsArray[0].starterCode || '');
+        // Try to load saved code first
+        const savedCode = await fetchSubmittedCode(problemsArray[0]._id);
+        setCode(savedCode || problemsArray[0].starterCode || '');
       }
     } catch (err) {
       console.error('Error fetching problems:', err);
@@ -90,6 +133,14 @@ export default function Round1() {
   // Initialize - fetch timer first, then problems
   useEffect(() => {
     const init = async () => {
+      // Check lock status first
+      await checkLockStatus();
+      
+      // Check session storage for lock
+      if (sessionStorage.getItem('isLocked') === 'true') {
+        setIsLocked(true);
+      }
+      
       // First, try to start timer if not started (for new users)
       try {
         await axios.post(`/api/users/${userId}/timer/start`, { round: 1, duration: 1800 });
@@ -105,27 +156,31 @@ export default function Round1() {
     };
     
     init();
-  }, []);
 
-  // Handle problem selection - ensure proper state update
-  const handleProblemSelect = (index) => {
-    const selectedProblem = problems[index];
-    if (selectedProblem) {
-      setSelectedProblemIndex(index);
-      setProblem(selectedProblem);
-      setCode(selectedProblem.starterCode || '');
-      setMistakes(0);
-    }
-  };
+    // Cleanup timer on unmount
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+    };
+  }, []);
 
   // Timer effect - uses backend-controlled timer (updates every second)
   useEffect(() => {
     if (!loading && timerFetchedRef.current) {
-      const timer = setInterval(() => {
+      // Clear existing timer
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+      }
+      
+      timerRef.current = setInterval(() => {
         axios.get(`/api/users/${userId}/timer?round=1`)
           .then(res => {
             const { remaining, isExpired } = res.data;
             setElapsedTime(remaining);
+            
+            // Save to sessionStorage for persistence
+            sessionStorage.setItem('round1Remaining', remaining.toString());
             
             if (isExpired) {
               alert('Time is up! Round 1 has ended.');
@@ -138,9 +193,28 @@ export default function Round1() {
             console.error('Error fetching timer:', err);
           });
       }, 1000);
-      return () => clearInterval(timer);
+      
+      return () => {
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+        }
+      };
     }
   }, [loading, userId, timerDuration, navigate]);
+
+  // Handle problem selection - ensure proper state update
+  const handleProblemSelect = async (index) => {
+    const selectedProblem = problems[index];
+    if (selectedProblem) {
+      setSelectedProblemIndex(index);
+      setProblem(selectedProblem);
+      // Try to load saved code first, then fall back to starter code
+      const savedCode = await fetchSubmittedCode(selectedProblem._id);
+      setCode(savedCode || selectedProblem.starterCode || '');
+      setMistakes(0);
+      setSubmissionResult(null);
+    }
+  };
 
   // Handle language change - keep current problem but update code for new language
   const handleLanguageChange = async (e) => {
@@ -163,7 +237,8 @@ export default function Round1() {
         const newIndex = problemsArray.findIndex(p => p.title === currentProblem.title);
         setSelectedProblemIndex(newIndex);
         setProblem(sameProblem);
-        setCode(sameProblem.starterCode || '');
+        const savedCode = await fetchSubmittedCode(sameProblem._id);
+        setCode(savedCode || sameProblem.starterCode || '');
       } else if (problemsArray.length > 0) {
         setSelectedProblemIndex(0);
         setProblem(problemsArray[0]);
@@ -201,11 +276,15 @@ export default function Round1() {
         problemId: problem?._id || null,
         code,
         language: selectedLanguage,
-        userId
+        userId,
+        round: 1
       });
 
       const result = res.data;
       const status = result.result?.summary?.allPassed ? 'Accepted' : result.status;
+
+      // Set submission result for UI display
+      setSubmissionResult(result);
 
       if (status === 'Accepted') {
         // Mark this problem as solved
@@ -232,37 +311,28 @@ export default function Round1() {
             }
           });
         } else {
-          // Some problems still unsolved - find next unsolved problem
-          alert('Correct! Moving to next problem...');
-
+          // Show result then auto move to next problem after 2 seconds
           // Find next unsolved problem
           const nextIndex = problems.findIndex(p => !newSolvedProblems.has(p._id));
           if (nextIndex !== -1) {
-            handleProblemSelect(nextIndex);
+            setTimeout(() => {
+              handleProblemSelect(nextIndex);
+            }, 2000);
           }
         }
       } else {
+        // Wrong answer - keep the result visible for user to see and fix
         const newMistakes = mistakes + 1;
         setMistakes(newMistakes);
         setTotalMistakes(totalMistakes + 1);
-
-        if (result.result?.results) {
-          const failedTest = result.result.results.find(r => !r.isPassed);
-          if (failedTest) {
-            alert(`Wrong Answer!\nTest Case ${failedTest.testCaseNumber}:\nInput: ${failedTest.input}\nExpected: ${failedTest.expectedOutput}\nGot: ${failedTest.actualOutput}`);
-          } else {
-            alert('Not correct yet, try again.');
-          }
-        } else {
-          alert('Not correct yet, try again.');
-        }
+        // Don't clear submission result - user can see what went wrong
       }
     } catch (err) {
       console.error(err);
       const newMistakes = mistakes + 1;
       setMistakes(newMistakes);
       setTotalMistakes(totalMistakes + 1);
-      alert('Submission failed');
+      setSubmissionResult({ error: 'Submission failed', message: err.message });
     }
   };
 
@@ -272,6 +342,17 @@ export default function Round1() {
 
   return (
     <div className="round-page" onContextMenu={handleCopyPaste}>
+      {/* Lockout overlay */}
+      {(isLocked || isLockedOut) && (
+        <div className="lockout-overlay">
+          <div className="lockout-content">
+            <h2>🚫 You Have Been Locked Out</h2>
+            <p>Multiple tab switches were detected. Your session has been terminated.</p>
+            <p>Please contact a coordinator if you believe this is an error.</p>
+          </div>
+        </div>
+      )}
+
       <div className="round-header">
         <h2>Round 1 - Debug the Code</h2>
         <div className="timer">
@@ -286,17 +367,6 @@ export default function Round1() {
       {warnings > 0 && !isLockedOut && (
         <div className="warning-banner">
           ⚠️ Warning! Tab switch detected. If you switch again you will be <strong>locked out</strong>.
-        </div>
-      )}
-
-      {/* Lockout overlay */}
-      {isLockedOut && (
-        <div className="lockout-overlay">
-          <div className="lockout-content">
-            <h2>🚫 You Have Been Locked Out</h2>
-            <p>Multiple tab switches were detected. Your session has been terminated.</p>
-            <p>Please contact a coordinator if you believe this is an error.</p>
-          </div>
         </div>
       )}
 
@@ -382,6 +452,59 @@ export default function Round1() {
             Reset Code
           </button>
         </div>
+
+        {/* Submission Result Display */}
+        {submissionResult && (
+          <div className="submission-result">
+            <h4>Submission Result</h4>
+            <div className={`result-status ${submissionResult.status === 'Accepted' ? 'success' : 'error'}`}>
+              Status: {submissionResult.status}
+            </div>
+            
+            {submissionResult.result?.summary && (
+              <div className="result-summary">
+                <p><strong>Marks:</strong> {submissionResult.marks || 0} / {submissionResult.result.summary.totalMarks || 10}</p>
+                <p><strong>Visible Tests:</strong> {submissionResult.result.summary.visiblePassed ? '✓ Passed' : '✗ Failed'}</p>
+                <p><strong>Hidden Tests:</strong> {submissionResult.result.summary.hiddenPassed ? '✓ Passed' : '✗ Failed'}</p>
+                {submissionResult.negativeMarks > 0 && (
+                  <p className="negative-marks"><strong>Negative Marks:</strong> -{submissionResult.negativeMarks}</p>
+                )}
+              </div>
+            )}
+
+            {/* Show test case failures - Expected vs Got */}
+            {submissionResult.result?.visible?.results && !submissionResult.result.summary.visiblePassed && (
+              <div className="test-case-failures">
+                <h5>Test Case Failures:</h5>
+                {submissionResult.result.visible.results.map((tc, index) => (
+                  !tc.isPassed && (
+                    <div key={index} className="failure-case">
+                      <p><strong>Test Case {tc.testCaseNumber}:</strong></p>
+                      <div className="case-detail">
+                        <span className="label">Input:</span>
+                        <pre>{tc.input}</pre>
+                      </div>
+                      <div className="case-detail">
+                        <span className="label">Expected:</span>
+                        <pre className="expected">{tc.expectedOutput}</pre>
+                      </div>
+                      <div className="case-detail">
+                        <span className="label">Got:</span>
+                        <pre className="got">{tc.actualOutput}</pre>
+                      </div>
+                    </div>
+                  )
+                ))}
+              </div>
+            )}
+
+            {submissionResult.error && (
+              <div className="error-message">
+                {submissionResult.message || submissionResult.error}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

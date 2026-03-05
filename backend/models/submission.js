@@ -8,9 +8,19 @@ const submissionSchema = new mongoose.Schema({
   status: { type: String, default: 'Pending' }, // 'Accepted' | 'Wrong Answer' | 'TLE' | etc.
   // Time elapsed (in seconds) from the user's individual timer when this submission was made.
   timeTaken: { type: Number, default: 0 },
-  // Final score awarded by the SRS time-decay formula (only set on Accepted submissions).
+  // Final score/marks awarded for this submission
   score: { type: Number, default: 0 },
-  result: { type: Object }, // Full Judge0 response
+  // Marks breakdown
+  marks: { type: Number, default: 0 },
+  visibleTestPassed: { type: Boolean, default: false },
+  hiddenTestPassed: { type: Boolean, default: false },
+  // Negative marks applied (every 3 wrong = -1)
+  negativeMarks: { type: Number, default: 0 },
+  // Optimal code bonus (+1 for best time complexity)
+  isOptimal: { type: Boolean, default: false },
+  optimalBonus: { type: Number, default: 0 },
+  // Result details from Judge0
+  result: { type: Object },
 }, { timestamps: true });
 
 module.exports = mongoose.model('Submission', submissionSchema);

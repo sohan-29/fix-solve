@@ -1,10 +1,18 @@
 const express = require('express');
-const { createSubmission } = require('../controllers/submissionController');
+const { createSubmission, getUserSubmissions, getProblemSubmissions } = require('../controllers/submissionController');
 const Submission = require('../models/submission');
 
 const router = express.Router();
 
 router.post('/', createSubmission);
+
+// Get submissions for a specific user
+router.get('/user/:userId', getUserSubmissions);
+
+// Get submissions for a specific problem
+router.get('/problem/:problemId', getProblemSubmissions);
+
+// Get all submissions
 router.get('/', async (req, res) => {
   try {
     const submissions = await Submission.find().populate('user', 'name').populate('problem', 'title');

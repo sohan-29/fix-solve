@@ -9,7 +9,27 @@ export default function Results() {
   useEffect(() => {
     axios.get('/api/users')
       .then(res => {
-        const sortedUsers = res.data.sort((a, b) => (a.totalTime || 0) - (b.totalTime || 0));
+        // Sort by: Marks (higher is better) → Time (lower is better) → Optimal Points (higher is better)
+        const sortedUsers = res.data.sort((a, b) => {
+          // Primary: Total Score (marks) - higher is better
+          const scoreA = a.totalScore || 0;
+          const scoreB = b.totalScore || 0;
+          if (scoreB !== scoreA) {
+            return scoreB - scoreA;
+          }
+          
+          // Secondary: Total Time - lower is better
+          const timeA = a.totalTime || 0;
+          const timeB = b.totalTime || 0;
+          if (timeA !== timeB) {
+            return timeA - timeB;
+          }
+          
+          // Tertiary: Optimal Points - higher is better
+          const optimalA = a.totalOptimalPoints || 0;
+          const optimalB = b.totalOptimalPoints || 0;
+          return optimalB - optimalA;
+        });
         setUsers(sortedUsers);
         setLoading(false);
       })
@@ -35,9 +55,14 @@ export default function Results() {
           <p>Loading results...</p>
         ) : (
           <>
-            <p>Rankings based on total time (lower is better)</p>
+            <p><strong>Ranking Criteria:</strong></p>
+            <ul style={{textAlign: 'left', marginBottom: '20px'}}>
+              <li>Primary: Total Marks (higher is better)</li>
+              <li>Secondary: Total Time (lower is better)</li>
+              <li>Tertiary: Optimal Points (higher is better)</li>
+            </ul>
             <p style={{ color: '#ff6b6b', fontSize: '12px' }}>
-              Penalty: +5 seconds per wrong submission
+              Marks: Visible tests (40%) + Hidden tests (60%) | Every 3 wrong submissions = -1 mark | Optimal code = +1 bonus
             </p>
             
             <table className="results-table">
@@ -45,9 +70,11 @@ export default function Results() {
                 <tr>
                   <th>Rank</th>
                   <th>Name</th>
+                  <th>Marks</th>
                   <th>Round 1</th>
                   <th>Round 2</th>
-                  <th>Total</th>
+                  <th>Time</th>
+                  <th>Optimal</th>
                 </tr>
               </thead>
               <tbody>
@@ -60,9 +87,11 @@ export default function Results() {
                       {index === 0 ? '1st' : index === 1 ? '2nd' : index === 2 ? '3rd' : `${index + 1}th`}
                     </td>
                     <td>{u.name}</td>
-                    <td>{formatTime(u.round1Time)}</td>
-                    <td>{formatTime(u.round2Time)}</td>
+                    <td><strong>{u.totalScore?.toFixed(2) || '0.00'}</strong></td>
+                    <td>{u.round1Score?.toFixed(2) || '0.00'}</td>
+                    <td>{u.round2Score?.toFixed(2) || '0.00'}</td>
                     <td>{formatTime(u.totalTime)}</td>
+                    <td>{u.totalOptimalPoints || 0}</td>
                   </tr>
                 ))}
               </tbody>

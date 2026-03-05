@@ -1215,3 +1215,126 @@ body {
   margin-bottom: 10px;
   line-height: 1.6;
 }
+
+/* ===== Submission Result Display ===== */
+.submission-result {
+  margin-top: 20px;
+  padding: 20px;
+  background: #1a1a1a;
+  border-radius: 4px;
+  border: 1px solid #333;
+  text-align: left;
+}
+
+.submission-result h4 {
+  color: #00ff00;
+  font-size: 16px;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #333;
+  padding-bottom: 10px;
+}
+
+.result-status {
+  padding: 10px 15px;
+  border-radius: 4px;
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+
+.result-status.success {
+  background: #1a3320;
+  color: #00ff00;
+  border: 1px solid #00ff00;
+}
+
+.result-status.error {
+  background: #331a1a;
+  color: #ff6b6b;
+  border: 1px solid #ff6b6b;
+}
+
+.result-summary {
+  margin-bottom: 15px;
+}
+
+.result-summary p {
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: #aaa;
+}
+
+.result-summary strong {
+  color: #00ff00;
+}
+
+.negative-marks {
+  color: #ff6b6b !important;
+}
+
+/* Test Case Failures */
+.test-case-failures {
+  margin-top: 15px;
+  padding: 15px;
+  background: #0d0d0d;
+  border-radius: 4px;
+  border: 1px solid #ff6b6b;
+}
+
+.test-case-failures h5 {
+  color: #ff6b6b;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.failure-case {
+  padding: 10px;
+  margin-bottom: 10px;
+  background: #1a1a1a;
+  border-radius: 2px;
+  border-left: 3px solid #ff6b6b;
+}
+
+.failure-case p {
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.case-detail {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 5px;
+}
+
+.case-detail .label {
+  color: #666;
+  font-size: 11px;
+  min-width: 70px;
+}
+
+.case-detail pre {
+  background: #0d0d0d;
+  padding: 5px;
+  border-radius: 2px;
+  font-size: 11px;
+  margin: 0;
+  overflow-x: auto;
+  color: #aaa;
+}
+
+.case-detail pre.expected {
+  color: #00ff00;
+}
+
+.case-detail pre.got {
+  color: #ff6b6b;
+}
+
+.error-message {
+  margin-top: 15px;
+  padding: 10px;
+  background: #331a1a;
+  border: 1px solid #ff6b6b;
+  border-radius: 4px;
+  color: #ff6b6b;
+  font-size: 13px;
+}

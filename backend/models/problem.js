@@ -18,6 +18,10 @@ const problemSchema = new mongoose.Schema({
   constraints: String,
   sampleInput: String,
   sampleOutput: String,
+  // Marks for this question (visible + hidden = total marks)
+  marks: { type: Number, default: 10 },
+  // Expected time complexity for optimal solution (for bonus points)
+  complexityExpected: { type: String, default: 'O(n)' },
   // Single code fields (for backward compatibility)
   starterCode: { type: String, default: '' }, // Initial code shown to user
   bugCode: { type: String, default: '' }, // Code with bug for Round 1
