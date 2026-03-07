@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import axios from '../api';
 import { useNavigate } from 'react-router-dom';
 import useAntiCheat from '../hooks/useAntiCheat';
+import Editor from '@monaco-editor/react';
 
 // Language options with display names
 const LANGUAGES = [
@@ -51,19 +52,19 @@ export default function Round1() {
     try {
       const res = await axios.get(`/api/users/${userId}/timer?round=1`);
       const { remaining, duration, timerStart } = res.data;
-      
+
       setTimerDuration(duration || 1800);
       setElapsedTime(remaining);
-      
+
       // Save to sessionStorage for persistence across refreshes
       sessionStorage.setItem('round1Remaining', remaining.toString());
       sessionStorage.setItem('round1Duration', (duration || 1800).toString());
-      
+
       if (timerStart) {
         setStartTime(new Date(timerStart));
         sessionStorage.setItem('round1TimerStart', timerStart);
       }
-      
+
       timerFetchedRef.current = true;
       return res.data;
     } catch (err) {
@@ -135,26 +136,26 @@ export default function Round1() {
     const init = async () => {
       // Check lock status first
       await checkLockStatus();
-      
+
       // Check session storage for lock
       if (sessionStorage.getItem('isLocked') === 'true') {
         setIsLocked(true);
       }
-      
+
       // First, try to start timer if not started (for new users)
       try {
         await axios.post(`/api/users/${userId}/timer/start`, { round: 1, duration: 1800 });
       } catch (err) {
         // Timer might already be started, ignore error
       }
-      
+
       // Then fetch the timer
       await fetchTimer();
-      
+
       // Finally fetch problems
       await fetchProblems(selectedLanguage);
     };
-    
+
     init();
 
     // Cleanup timer on unmount
@@ -172,16 +173,16 @@ export default function Round1() {
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
-      
+
       timerRef.current = setInterval(() => {
         axios.get(`/api/users/${userId}/timer?round=1`)
           .then(res => {
             const { remaining, isExpired } = res.data;
             setElapsedTime(remaining);
-            
+
             // Save to sessionStorage for persistence
             sessionStorage.setItem('round1Remaining', remaining.toString());
-            
+
             if (isExpired) {
               alert('Time is up! Round 1 has ended.');
               navigate('/round-complete', {
@@ -193,7 +194,7 @@ export default function Round1() {
             console.error('Error fetching timer:', err);
           });
       }, 1000);
-      
+
       return () => {
         if (timerRef.current) {
           clearInterval(timerRef.current);
@@ -221,9 +222,9 @@ export default function Round1() {
     const newLang = e.target.value;
     const currentProblemIndex = selectedProblemIndex;
     const currentProblem = problems[currentProblemIndex];
-    
+
     setSelectedLanguage(newLang);
-    
+
     // Fetch problems for new language but keep current selection
     try {
       const res = await axios.get(`/api/problems/round/1?language=${newLang}`);
@@ -430,17 +431,23 @@ export default function Round1() {
           </select>
         </div>
 
-        <div className="code-editor-wrapper">
-          <textarea
-            className="code-textarea"
-            rows={15}
-            cols={60}
+        <div className="code-editor-wrapper" style={{ height: '500px', border: '1px solid #333' }}>
+          <Editor
+            height="100%"
+            language={selectedLanguage === 'c' ? 'cpp' : selectedLanguage}
             value={code}
-            onChange={e => setCode(e.target.value)}
-            onCopy={handleCopyPaste}
-            onCut={handleCopyPaste}
-            onPaste={handleCopyPaste}
-            draggable={false}
+            theme="vs-dark"
+            onChange={(value) => setCode(value || '')}
+            options={{
+              minimap: { enabled: false },
+              fontSize: 14,
+              scrollBeyondLastLine: false,
+              automaticLayout: true,
+              contextmenu: false, // Disable right-click menu for anti-cheat
+              readOnly: false,
+              padding: { top: 10, bottom: 10 },
+              fontFamily: "'Courier New', Courier, monospace",
+            }}
           />
         </div>
 
@@ -460,7 +467,7 @@ export default function Round1() {
             <div className={`result-status ${submissionResult.status === 'Accepted' ? 'success' : 'error'}`}>
               Status: {submissionResult.status}
             </div>
-            
+
             {submissionResult.result?.summary && (
               <div className="result-summary">
                 <p><strong>Marks:</strong> {submissionResult.marks || 0} / {submissionResult.result.summary.totalMarks || 10}</p>

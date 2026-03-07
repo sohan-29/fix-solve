@@ -109,7 +109,7 @@ if __name__ == "__main__":
 
         const accepted = results.filter(r => r === 'ACCEPTED').length;
         const failed = results.filter(r => r === 'FAILED').length;
-        const rejected = results.filter(r => r === 'REJECTED').length;
+        const rejected = USER_COUNT - accepted - failed;
 
         console.log(`\nResults Summary:`);
         console.log(`- Total Submissions: ${USER_COUNT}`);

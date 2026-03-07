@@ -4,7 +4,8 @@
   box-sizing: border-box;
 }
 
-html, body {
+html,
+body {
   min-height: 100vh;
   width: 100%;
 }
@@ -486,31 +487,11 @@ body {
 }
 
 .code-editor-wrapper {
-  background: #1a1a1a;
-  border-radius: 2px;
+  background: #1e1e1e;
+  border-radius: 4px;
   border: 1px solid #333;
   overflow: hidden;
-}
-
-.code-textarea {
-  width: 100%;
-  min-height: 400px;
-  background: #0d0d0d;
-  color: #d4d4d4;
-  border: none;
-  padding: 15px;
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 13px;
-  line-height: 1.5;
-  resize: vertical;
-}
-
-.code-textarea:focus {
-  outline: none;
-}
-
-.code-textarea::selection {
-  background: #264f78;
+  margin-top: 10px;
 }
 
 .round-actions {
@@ -1146,16 +1127,16 @@ body {
     gap: 10px;
     text-align: center;
   }
-  
+
   .timer {
     font-size: 16px;
   }
-  
+
   .completion-stats {
     flex-direction: column;
     gap: 15px;
   }
-  
+
   .admin-tabs {
     flex-wrap: wrap;
   }
@@ -1175,8 +1156,15 @@ body {
 }
 
 @keyframes warning-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
 }
 
 /* ===== Anti-Cheat: Lockout Overlay ===== */

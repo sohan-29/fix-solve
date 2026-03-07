@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import axios from '../api';
 import { useNavigate } from 'react-router-dom';
 import useAntiCheat from '../hooks/useAntiCheat';
+import Editor from '@monaco-editor/react';
 
 const LANGUAGES = [
   { id: 'c', name: 'C' },
@@ -51,16 +52,16 @@ export default function Round2() {
       const { remaining, duration, timerStart } = res.data;
       setTimerDuration(duration || 2700);
       setElapsedTime(remaining);
-      
+
       // Save to sessionStorage for persistence across refreshes
       sessionStorage.setItem('round2Remaining', remaining.toString());
       sessionStorage.setItem('round2Duration', (duration || 2700).toString());
-      
+
       if (timerStart) {
         setStartTime(new Date(timerStart));
         sessionStorage.setItem('round2TimerStart', timerStart);
       }
-      
+
       timerFetchedRef.current = true;
       return res.data;
     } catch (err) {
@@ -128,19 +129,19 @@ export default function Round2() {
     const init = async () => {
       // Check lock status first
       await checkLockStatus();
-      
+
       // Check session storage for lock
       if (sessionStorage.getItem('isLocked') === 'true') {
         setIsLocked(true);
       }
-      
+
       try {
         await axios.post(`/api/users/${userId}/timer/start`, { round: 2, duration: 2700 });
-      } catch (err) {}
+      } catch (err) { }
       await fetchTimer();
       await fetchProblems(selectedLanguage);
     };
-    
+
     init();
 
     // Cleanup timer on unmount
@@ -157,16 +158,16 @@ export default function Round2() {
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
-      
+
       timerRef.current = setInterval(() => {
         axios.get(`/api/users/${userId}/timer?round=2`)
           .then(res => {
             const { remaining, isExpired } = res.data;
             setElapsedTime(remaining);
-            
+
             // Save to sessionStorage for persistence
             sessionStorage.setItem('round2Remaining', remaining.toString());
-            
+
             if (isExpired) {
               alert('Time is up! Round 2 has ended.');
               navigate('/round-complete', { state: { timeTaken: timerDuration, round: 2 } });
@@ -174,7 +175,7 @@ export default function Round2() {
           })
           .catch(err => { console.error('Error fetching timer:', err); });
       }, 1000);
-      
+
       return () => {
         if (timerRef.current) {
           clearInterval(timerRef.current);
@@ -201,9 +202,9 @@ export default function Round2() {
     const newLang = e.target.value;
     const currentProblemIndex = selectedProblemIndex;
     const currentProblem = problems[currentProblemIndex];
-    
+
     setSelectedLanguage(newLang);
-    
+
     try {
       const res = await axios.get(`/api/problems/round/2?language=${newLang}`);
       const problemsData = res.data;
@@ -316,9 +317,9 @@ export default function Round2() {
         <div className="timer">Time: {formatTime(elapsedTime)} | Mistakes: {totalMistakes} | Solved: {solvedProblems.size}/{problems.length}</div>
         <button onClick={toggleFullscreen} className="fullscreen-btn">{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</button>
       </div>
-      
+
       {warnings > 0 && !isLockedOut && <div className="warning-banner">Warning! Tab switch detected.</div>}
-      
+
       {problems.length > 1 && (
         <div className="problem-selector">
           <label>Select Problem: </label>
@@ -327,7 +328,7 @@ export default function Round2() {
           </select>
         </div>
       )}
-      
+
       <div className="round-content-wrapper">
         {problem && (
           <div className="problem-description">
@@ -336,35 +337,51 @@ export default function Round2() {
             {problem.inputFormat && <p><strong>Input Format:</strong> {problem.inputFormat}</p>}
             {problem.outputFormat && <p><strong>Output Format:</strong> {problem.outputFormat}</p>}
             {problem.constraints && <p><strong>Constraints:</strong> {problem.constraints}</p>}
-            {problem.sampleInput && <div><strong>Sample Input:</strong><pre style={{background:'#f4f4f4',padding:'10px'}}>{problem.sampleInput}</pre></div>}
-            {problem.sampleOutput && <div><strong>Sample Output:</strong><pre style={{background:'#f4f4f4',padding:'10px'}}>{problem.sampleOutput}</pre></div>}
-            {problem.testCases && problem.testCases.length > 0 && <button onClick={() => setShowTestCases(!showTestCases)} style={{marginTop:'10px'}}>{showTestCases ? 'Hide' : 'Show'} Test Cases</button>}
+            {problem.sampleInput && <div><strong>Sample Input:</strong><pre style={{ background: '#f4f4f4', padding: '10px' }}>{problem.sampleInput}</pre></div>}
+            {problem.sampleOutput && <div><strong>Sample Output:</strong><pre style={{ background: '#f4f4f4', padding: '10px' }}>{problem.sampleOutput}</pre></div>}
+            {problem.testCases && problem.testCases.length > 0 && <button onClick={() => setShowTestCases(!showTestCases)} style={{ marginTop: '10px' }}>{showTestCases ? 'Hide' : 'Show'} Test Cases</button>}
             {showTestCases && problem.testCases && (
-              <div style={{marginTop:'10px'}}>
+              <div style={{ marginTop: '10px' }}>
                 <h4>Test Cases:</h4>
                 {problem.testCases.map((tc, i) => (
-                  <div key={i} style={{marginBottom:'10px',border:'1px solid #ddd',padding:'10px'}}>
-                    <strong>Test Case {i+1}:</strong><br/>
-                    Input: <pre style={{display:'inline'}}>{tc.input}</pre><br/>
-                    Output: <pre style={{display:'inline'}}>{tc.output}</pre>
+                  <div key={i} style={{ marginBottom: '10px', border: '1px solid #ddd', padding: '10px' }}>
+                    <strong>Test Case {i + 1}:</strong><br />
+                    Input: <pre style={{ display: 'inline' }}>{tc.input}</pre><br />
+                    Output: <pre style={{ display: 'inline' }}>{tc.output}</pre>
                   </div>
                 ))}
               </div>
             )}
           </div>
         )}
-        
+
         <div className="language-selector">
           <label>Select Language: </label>
           <select id="language" value={selectedLanguage} onChange={handleLanguageChange}>
             {LANGUAGES.map(lang => (<option key={lang.id} value={lang.id}>{lang.name}</option>))}
           </select>
         </div>
-        
-        <div className="code-editor-wrapper">
-          <textarea className="code-textarea" rows={15} cols={60} value={code} onChange={e => setCode(e.target.value)} onCopy={handleCopyPaste} onCut={handleCopyPaste} onPaste={handleCopyPaste} draggable={false} />
+
+        <div className="code-editor-wrapper" style={{ height: '500px', border: '1px solid #333' }}>
+          <Editor
+            height="100%"
+            language={selectedLanguage === 'c' ? 'cpp' : selectedLanguage}
+            value={code}
+            theme="vs-dark"
+            onChange={(value) => setCode(value || '')}
+            options={{
+              minimap: { enabled: false },
+              fontSize: 14,
+              scrollBeyondLastLine: false,
+              automaticLayout: true,
+              contextmenu: false, // Disable right-click menu for anti-cheat
+              readOnly: false,
+              padding: { top: 10, bottom: 10 },
+              fontFamily: "'Courier New', Courier, monospace",
+            }}
+          />
         </div>
-        
+
         <div className="round-actions">
           <button onClick={handleSubmit}>Submit</button>
           <button onClick={() => setCode(problem?.starterCode || '')}>Reset Code</button>
@@ -377,7 +394,7 @@ export default function Round2() {
             <div className={`result-status ${submissionResult.status === 'Accepted' ? 'success' : 'error'}`}>
               Status: {submissionResult.status}
             </div>
-            
+
             {submissionResult.result?.summary && (
               <div className="result-summary">
                 <p><strong>Marks:</strong> {submissionResult.marks || 0} / {submissionResult.result.summary.totalMarks || 10}</p>
