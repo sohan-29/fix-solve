@@ -251,12 +251,7 @@ export default function Round1() {
       setLoading(false);
     }
   };
-
-  // Allow copy/paste for user convenience
-  const handleCopyPaste = (e) => {
-    // Copy/paste is allowed
-  };
-
+  
   // Toggle fullscreen
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {

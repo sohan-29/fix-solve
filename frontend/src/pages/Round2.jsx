@@ -230,10 +230,6 @@ export default function Round2() {
     }
   };
 
-  const handleCopyPaste = (e) => {
-    // Copy/paste is allowed
-  };
-
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen();
