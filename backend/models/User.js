@@ -60,6 +60,11 @@ const UserSchema = new mongoose.Schema(
     isLockedOut: { type: Boolean, default: false },
 
     isQualified: { type: Boolean, default: false },
+    
+    // --- Approval System ---
+    isApproved: { type: Boolean, default: false }, // User needs admin approval to start
+    approvedAt: { type: Date, default: null }, // When user was approved
+    approvalRequestedAt: { type: Date, default: null }, // When user requested approval
   },
   { timestamps: true }
 );

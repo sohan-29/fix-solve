@@ -1,104 +1,83 @@
-# Fix & Solve - Implementation Plan
+# Implementation Plan - Fix & Solve Contest System Updates
 
-## Completed Features
+## Phase 1: Timer and Session Fixes
 
-### 1. Round Completion Page ✅
-- Created `RoundCompletion.jsx` to show stats after each round
-- Shows: time taken, mistakes count, penalty applied
-- Displays instructions for the next round
-- Button to proceed to next round or view results
+### 1.1 Fix Timer Persistence
+- **Issue**: Timer resets on refresh or problem switch
+- **Solution**: Use sessionStorage properly and prevent timer reset on problem change
+- **Files**: Round1.jsx, Round2.jsx
 
-### 2. Timer Display ✅
-- Added live timer in Round 1 and Round 2 pages
-- Timer shows elapsed time in MM:SS or HH:MM:SS format
-- Shows mistake count alongside timer
+### 1.2 Fix UI After Lockout
+- **Issue**: Locked users can see content on refresh
+- **Solution**: Add check before rendering content, redirect if locked
+- **Files**: Round1.jsx, Round2.jsx
 
-### 3. Round Transition with Instructions ✅
-- After Round 1 completion, shows RoundCompletion page with instructions
-- Displays Round 2 instructions before starting
-- Penalty warnings clearly shown
+## Phase 2: Code Editor Improvements
 
-### 4. Penalty System ✅
-- Each wrong submission adds 5 second penalty
-- Penalty affects total time calculation
-- Lower chances of winning with more mistakes
-- Penalty is displayed to user after each wrong submission
+### 2.1 Fix Code Switching Issue
+- **Issue**: Previous debug code shows when switching problems
+- **Solution**: Properly save and load code per problem per user
+- **Files**: Round1.jsx, Round2.jsx
 
-### 5. Admin Panel ✅
-- Full CRUD operations for problems
-- Multi-language support:
-  - Bug code by language (Round 1)
-  - Starter code by language (Round 2)
-  - Supported languages selection
-- Test cases management:
-  - Visible test cases
-  - Hidden test cases
-- Additional problem metadata:
-  - Time limit
-  - Difficulty
-  - Time complexity
-- Delete submissions and users
-- Leaderboard management
+### 2.2 Add Run Button
+- **Issue**: No way to test code without submitting
+- **Solution**: Add Run button that tests code without penalty
+- **Files**: Round1.jsx, Round2.jsx, submissionController.js
 
-## Complete Flow
+## Phase 3: UI/UX Improvements
 
-1. **Home Page** → Enter name → Register user
-2. **Instructions Page** → Read rules → Agree → Start Round 1
-3. **Round 1** → Debug the buggy code → Timer at top
-4. **Round Completion** → See time, mistakes, penalty → Start Round 2
-5. **Round 2** → Solve the problem from scratch → Timer at top
-6. **Round Completion** → See final stats → Finish
-7. **Results Page** → View leaderboard sorted by total time
+### 3.1 Auto-scroll to Results
+- **Issue**: Output not automatically visible
+- **Solution**: Auto-scroll to submission results after submission
+- **Files**: Round1.jsx, Round2.jsx
 
-## Backend Updates
+### 3.2 Add Loading Indicator
+- **Issue**: No feedback during submission
+- **Solution**: Add spinner/loader during submission process
+- **Files**: Round1.jsx, Round2.jsx
 
-### Problem Model
-- Added `supportedLanguages` field
-- Added `starterCodeByLanguage` object
-- Added `bugCodeByLanguage` object
-- Updated default language to JavaScript
+### 3.3 Improve Result Display
+- **Issue**: Results need to be more user-friendly
+- **Solution**: Make results more prominent and colorful
+- **Files**: App.css
 
-### Routes
-- Added DELETE endpoint for submissions
-- Added DELETE endpoint for users
-- PUT endpoint for problems
+## Phase 4: Approval System
 
-### Seed Data
-- Updated with multi-language code templates
-- Better problem descriptions
+### 4.1 Add User Approval Feature
+- **Issue**: Users can start without admin approval
+- **Solution**: Add approval status to User model, instruction page waits for approval
+- **Files**: User.js, Instructions.jsx, Home.jsx, userController.js, Admin.jsx
 
-## Frontend Updates
+### 4.2 Admin Panel Updates
+- **Issue**: No way to approve users
+- **Solution**: Add approve button in admin panel
+- **Files**: Admin.jsx
 
-### Round1.jsx ✅
-- Live timer display at top
-- Language selector
-- Navigation to completion page with stats
-- Fullscreen mode
-- Copy/Paste prevention
+## Phase 5: Negative Marks Fix
 
-### Round2.jsx ✅
-- Live timer display at top
-- Language selector
-- Navigation to completion page with stats
-- Fullscreen mode
-- Copy/Paste prevention
+### 5.1 Separate Run and Submit
+- **Issue**: Negative marks applied on Run
+- **Solution**: Only apply negative marks on Submit, not Run
+- **Files**: Round1.jsx, Round2.jsx, submissionController.js
 
-### Instructions.jsx ✅
-- Start round from instructions page
-- Penalty explanation
-- Clear instructions for both rounds
+## Implementation Order:
 
-### Home.jsx ✅
-- Simple registration flow
-- Navigation to instructions
+1. Fix timer persistence in Round1.jsx and Round2.jsx
+2. Fix lockout check and redirect
+3. Add Run button functionality
+4. Fix code switching between problems
+5. Add loading indicator
+6. Add auto-scroll to results
+7. Add approval system (backend + frontend)
+8. Fix negative marks for Run vs Submit
 
-### App.jsx ✅
-- Added routes for all pages
-
-### App.css ✅
-- Enhanced styling for all components
-- Timer display styling
-- Responsive design improvements
-
-## Remaining Tasks
-- None - All requested features implemented ✅
+## Files to Modify:
+- backend/models/User.js
+- backend/controllers/userController.js
+- backend/controllers/submissionController.js
+- frontend/src/pages/Round1.jsx
+- frontend/src/pages/Round2.jsx
+- frontend/src/pages/Instructions.jsx
+- frontend/src/pages/Home.jsx
+- frontend/src/pages/Admin.jsx
+- frontend/src/App.css

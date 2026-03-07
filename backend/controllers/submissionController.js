@@ -14,24 +14,20 @@ const OPTIMAL_BONUS = 1; // +1 mark for optimal code
  * POST /api/submissions
  * Creates a submission, checks timer validity, evaluates code against test cases,
  * and applies the marks-based scoring system.
- *
- * Marks Distribution:
- * - Visible test cases: 40% of problem marks
- * - Hidden test cases: 60% of problem marks
- * - Negative marks: -1 for every 3 wrong submissions
- * - Optimal bonus: +1 for best time complexity
- *
- * Expected body:
- *   { problemId, code, language, userId, round }
+ * 
+ * Body params:
+ *   { problemId, code, language, userId, round, isRun }
+ *   - isRun: if true, tests code without penalty (no negative marks, no wrong submission tracking)
  */
 const createSubmission = async (req, res, next) => {
   try {
-    const { problemId, code, language, userId, round = 1 } = req.body;
+    const { problemId, code, language, userId, round = 1, isRun = false } = req.body;
     const userIdResolved = userId || req.headers['x-user-id'];
 
     // --- 1. Fetch User and enforce server-side timer ---
+    // Skip timer check for Run (isRun=true) - allow testing even if time expired
     let user = null;
-    if (userIdResolved && userIdResolved !== 'anonymous') {
+    if (userIdResolved && userIdResolved !== 'anonymous' && !isRun) {
       user = await User.findById(userIdResolved);
       if (user) {
         // --- Anti-cheat lockout check ---
@@ -62,6 +58,15 @@ const createSubmission = async (req, res, next) => {
             });
           }
         }
+      }
+    } else if (userIdResolved && userIdResolved !== 'anonymous' && isRun) {
+      // For Run, still fetch user to check lockout but skip timer
+      user = await User.findById(userIdResolved);
+      if (user && user.isLockedOut) {
+        return res.status(403).json({
+          error: 'Locked out',
+          message: 'You have been locked out for switching tabs during the contest.',
+        });
       }
     }
 
@@ -96,11 +101,17 @@ const createSubmission = async (req, res, next) => {
     const visibleTestPassed = visibleResult.summary.allPassed;
 
     // --- 4. Run hidden test cases via Judge0 ---
-    const hiddenResult = hiddenTestCases.length > 0
-      ? await runAllTestCases(code, language || 'c', hiddenTestCases)
-      : { summary: { allPassed: false }, results: [] };
+    // Skip hidden tests for Run mode - only show visible test results
+    let hiddenResult = { summary: { allPassed: false }, results: [] };
+    let hiddenTestPassed = false;
     
-    const hiddenTestPassed = hiddenResult.summary.allPassed;
+    if (!isRun && hiddenTestCases.length > 0) {
+      hiddenResult = await runAllTestCases(code, language || 'c', hiddenTestCases);
+      hiddenTestPassed = hiddenResult.summary.allPassed;
+    } else if (isRun) {
+      // For Run, mark as not passed since we're not testing hidden cases
+      hiddenTestPassed = false;
+    }
 
     // Determine overall status
     const overallStatus = (visibleTestPassed && hiddenTestPassed) ? 'Accepted' 
@@ -119,10 +130,11 @@ const createSubmission = async (req, res, next) => {
     earnedMarks = Math.round(earnedMarks * 100) / 100;
 
     // --- 6. Handle Wrong Submissions & Negative Marks ---
+    // ONLY apply negative marks for actual Submissions, not for Run
     let negativeMarks = 0;
     let wrongSubmissions = 0;
 
-    if (user) {
+    if (user && !isRun) {
       wrongSubmissions = user[`round${round}WrongSubmissions`] || 0;
       
       if (!visibleTestPassed || !hiddenTestPassed) {
@@ -191,7 +203,8 @@ const createSubmission = async (req, res, next) => {
     }
 
     // --- 10. Persist Submission ---
-    const submission = await Submission.create({
+    // For Run submissions, don't save to database (or mark as isRun)
+    const submissionData = {
       user: userIdResolved,
       problem: problemId,
       code,
@@ -207,6 +220,7 @@ const createSubmission = async (req, res, next) => {
       timeTaken: user && user[`round${round}TimerStart`]
         ? getElapsedSeconds(user[`round${round}TimerStart`])
         : 0,
+      isRun: isRun, // Flag to indicate this is a Run (not a Submit)
       result: {
         visible: visibleResult,
         hidden: hiddenResult,
@@ -219,9 +233,16 @@ const createSubmission = async (req, res, next) => {
           finalScore: earnedMarks - negativeMarks
         }
       },
-    });
+    };
 
-    res.status(201).json(submission);
+    const submission = await Submission.create(submissionData);
+
+    // Return response with isRun flag so frontend knows not to show negative marks
+    res.status(201).json({
+      ...submission,
+      isRun: isRun,
+      message: isRun ? 'Run completed successfully' : 'Submission recorded'
+    });
   } catch (error) {
     next(error);
   }

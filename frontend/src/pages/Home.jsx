@@ -1,4 +1,4 @@
-import { useState } from 'react';
+  import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from '../api';
 
@@ -14,6 +14,14 @@ export default function Home() {
       const user = res.data;
       localStorage.setItem('userId', user._id);
       localStorage.setItem('userName', name);
+      
+      // Automatically request approval after registration
+      try {
+        await axios.post(`/api/users/${user._id}/request-approval`);
+      } catch (approvalErr) {
+        console.log('Auto approval request failed, user can request manually');
+      }
+      
       // Go to instructions page first
       navigate('/instructions');
     } catch (err) {

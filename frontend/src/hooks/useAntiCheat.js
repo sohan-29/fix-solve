@@ -41,9 +41,14 @@ export default function useAntiCheat(userId) {
     useEffect(() => {
         if (!userId) return;
 
-        const handleVisibilityChange = () => {
+    const handleVisibilityChange = () => {
             // Only trigger when the page becomes hidden (user switched away)
-            if (document.hidden) {
+            // Also check if we're on a contest page (not admin, home, instructions, results, etc.)
+            const currentPath = window.location.pathname;
+            const isContestPage = currentPath === '/round1' || currentPath === '/round2';
+            
+            // Only report violation if on contest pages
+            if (document.hidden && isContestPage) {
                 reportViolation();
             }
         };

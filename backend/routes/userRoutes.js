@@ -1,11 +1,28 @@
 const express = require("express");
-const { registerUser, getUsers } = require("../controllers/userController");
+const { 
+  registerUser, 
+  getUsers, 
+  getUserById,
+  requestApproval,
+  checkApprovalStatus,
+  approveUser,
+  unapproveUser,
+  getPendingApprovals
+} = require("../controllers/userController");
 const User = require("../models/User");
 const { getRemainingSeconds } = require("../utils/timerService");
 const router = express.Router();
 
 router.post("/register", registerUser);
 router.get("/", getUsers);
+router.get("/:id", getUserById);
+
+// Approval routes
+router.post("/:id/request-approval", requestApproval);
+router.get("/:id/approval-status", checkApprovalStatus);
+router.post("/:id/approve", approveUser);
+router.post("/:id/unapprove", unapproveUser);
+router.get("/pending-approvals", getPendingApprovals);
 
 // Get timer status for a user (for backend-controlled timer)
 router.get("/:userId/timer", async (req, res) => {

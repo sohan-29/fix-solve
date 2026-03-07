@@ -6,6 +6,7 @@ const {
     getTimerStatus,
     resetUserSession,
     reportViolation,
+    unlockUser,
 } = require("../controllers/contestController");
 const router = express.Router();
 
@@ -22,6 +23,9 @@ router.post("/admin/reset-session", resetUserSession);
 
 // --- Anti-Cheat (Page Visibility) ---
 router.post("/report-violation", reportViolation);
+
+// --- Unlock User ---
+router.post("/unlock-user", unlockUser);
 
 // --- Legacy Round Control ---
 router.post("/start", startRound);

@@ -27,11 +27,14 @@ export default function Round1() {
   const [timerDuration, setTimerDuration] = useState(1800); // Default 30 min
   const [isLocked, setIsLocked] = useState(false);
   const [submissionResult, setSubmissionResult] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false); // Loading state for submission
+  const [resultRef, setResultRef] = useState(null); // Ref for auto-scroll
   const navigate = useNavigate();
   const userId = localStorage.getItem('userId');
   const { warnings, isLockedOut, MAX_WARNINGS } = useAntiCheat(userId);
   const timerFetchedRef = useRef(false);
   const timerRef = useRef(null);
+  const resultScrollRef = useRef(null);
 
   // Format time as h:m:s (countdown style - shows remaining time)
   const formatTime = (seconds) => {
@@ -82,13 +85,17 @@ export default function Round1() {
     }
   };
 
-  // Check lock status on mount
+  // Check lock status on mount - always fetch from server
   const checkLockStatus = async () => {
     try {
       const res = await axios.get(`/api/users/${userId}`);
-      if (res.data.isLockedOut) {
-        setIsLocked(true);
-        sessionStorage.setItem('isLocked', 'true');
+      // Server has the latest lock status - use that directly
+      setIsLocked(res.data.isLockedOut || false);
+      
+      // Also check if user is approved
+      if (!res.data.isApproved && !res.data.isLockedOut) {
+        // User is not approved - redirect to instructions
+        navigate('/instructions');
       }
     } catch (err) {
       console.error('Error checking lock status:', err);
@@ -120,7 +127,7 @@ export default function Round1() {
         setProblem(problemsArray[0]);
         // Try to load saved code first
         const savedCode = await fetchSubmittedCode(problemsArray[0]._id);
-        setCode(savedCode || problemsArray[0].starterCode || '');
+setCode(savedCode || problemsArray[0].bugCode || problemsArray[0].starterCode || '');
       }
     } catch (err) {
       console.error('Error fetching problems:', err);
@@ -133,13 +140,8 @@ export default function Round1() {
   // Initialize - fetch timer first, then problems
   useEffect(() => {
     const init = async () => {
-      // Check lock status first
+      // Check lock status from server
       await checkLockStatus();
-      
-      // Check session storage for lock
-      if (sessionStorage.getItem('isLocked') === 'true') {
-        setIsLocked(true);
-      }
       
       // First, try to start timer if not started (for new users)
       try {
@@ -202,6 +204,15 @@ export default function Round1() {
     }
   }, [loading, userId, timerDuration, navigate]);
 
+  // Auto-scroll to results when submissionResult changes
+  useEffect(() => {
+    if (submissionResult && resultScrollRef.current) {
+      setTimeout(() => {
+        resultScrollRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  }, [submissionResult]);
+
   // Handle problem selection - ensure proper state update
   const handleProblemSelect = async (index) => {
     const selectedProblem = problems[index];
@@ -210,7 +221,7 @@ export default function Round1() {
       setProblem(selectedProblem);
       // Try to load saved code first, then fall back to starter code
       const savedCode = await fetchSubmittedCode(selectedProblem._id);
-      setCode(savedCode || selectedProblem.starterCode || '');
+      setCode(savedCode || selectedProblem.bugCode || selectedProblem.starterCode || '');
       setMistakes(0);
       setSubmissionResult(null);
     }
@@ -252,9 +263,27 @@ export default function Round1() {
   };
 
   // Allow copy/paste for user convenience
-  const handleCopyPaste = (e) => {
-    // Copy/paste is allowed
+  // Disable copy/paste - prevent cheating
+  const disableCopyPaste = (e) => {
+    e.preventDefault();
+    alert('Copy/Paste is disabled during the contest!');
   };
+  
+  // Auto enter fullscreen on mount
+  useEffect(() => {
+    const enterFullscreen = () => {
+      if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+          console.log('Could not enter fullscreen:', err);
+        });
+      }
+    };
+    
+    // Enter fullscreen after a short delay to ensure page is loaded
+    const timer = setTimeout(enterFullscreen, 1000);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   // Toggle fullscreen
   const toggleFullscreen = () => {
@@ -267,7 +296,61 @@ export default function Round1() {
     }
   };
 
+  // Handle Run (test code without submission)
+  const handleRun = async () => {
+    setIsSubmitting(true);
+    setSubmissionResult(null);
+    try {
+      const res = await axios.post('/api/submissions', {
+        problemId: problem?._id || null,
+        code,
+        language: selectedLanguage,
+        userId,
+        round: 1,
+        isRun: true // Flag for Run mode - no negative marks
+      });
+
+      const result = res.data;
+      console.log('Run result:', result);
+      
+      // For Run, check if visible tests passed
+      const isVisiblePassed = result.result?.summary?.visiblePassed === true || result.visibleTestPassed === true;
+      const status = isVisiblePassed ? 'Accepted' : 'Wrong Answer';
+
+      // Set submission result for UI display
+      setSubmissionResult({
+        ...result,
+        status: status,
+        isRun: true, // Flag to indicate this is a Run result
+        result: result.result || {
+          summary: {
+            visiblePassed: isVisiblePassed,
+            hiddenPassed: false,
+            totalMarks: result.marks || 10,
+            earnedMarks: result.marks || 0,
+            negativeMarks: 0,
+            finalScore: result.marks || 0
+          },
+          visible: {
+            results: result.result?.visible?.results || []
+          }
+        }
+      });
+    } catch (err) {
+      console.error('Run error:', err);
+      setSubmissionResult({ 
+        error: 'Run failed', 
+        message: err.response?.data?.message || err.message, 
+        isRun: true,
+        status: 'Error'
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleSubmit = async () => {
+    setIsSubmitting(true);
     try {
       const userId = localStorage.getItem('userId');
       const userName = localStorage.getItem('userName');
@@ -277,7 +360,8 @@ export default function Round1() {
         code,
         language: selectedLanguage,
         userId,
-        round: 1
+        round: 1,
+        isRun: false // This is a real submission
       });
 
       const result = res.data;
@@ -333,6 +417,8 @@ export default function Round1() {
       setMistakes(newMistakes);
       setTotalMistakes(totalMistakes + 1);
       setSubmissionResult({ error: 'Submission failed', message: err.message });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -340,19 +426,21 @@ export default function Round1() {
     return <div className="container">Loading problem...</div>;
   }
 
-  return (
-    <div className="round-page" onContextMenu={handleCopyPaste}>
-      {/* Lockout overlay */}
-      {(isLocked || isLockedOut) && (
-        <div className="lockout-overlay">
-          <div className="lockout-content">
-            <h2>🚫 You Have Been Locked Out</h2>
-            <p>Multiple tab switches were detected. Your session has been terminated.</p>
-            <p>Please contact a coordinator if you believe this is an error.</p>
-          </div>
+  // Redirect if locked out
+  if (isLocked || isLockedOut) {
+    return (
+      <div className="lockout-overlay">
+        <div className="lockout-content">
+          <h2>🚫 You Have Been Locked Out</h2>
+          <p>Multiple tab switches were detected. Your session has been terminated.</p>
+          <p>Please contact a coordinator if you believe this is an error.</p>
         </div>
-      )}
+      </div>
+    );
+  }
 
+  return (
+    <div className="round-page" onContextMenu={disableCopyPaste}>
       <div className="round-header">
         <h2>Round 1 - Debug the Code</h2>
         <div className="timer">
@@ -437,26 +525,39 @@ export default function Round1() {
             cols={60}
             value={code}
             onChange={e => setCode(e.target.value)}
-            onCopy={handleCopyPaste}
-            onCut={handleCopyPaste}
-            onPaste={handleCopyPaste}
+            onCopy={disableCopyPaste}
+            onCut={disableCopyPaste}
+            onPaste={disableCopyPaste}
             draggable={false}
           />
         </div>
 
+        {/* Loading overlay */}
+        {isSubmitting && (
+          <div className="submission-loading">
+            <div className="loading-spinner"></div>
+            <p>Processing your code...</p>
+          </div>
+        )}
+
         <div className="round-actions">
-          <button onClick={handleSubmit}>
+          <button onClick={handleRun} disabled={isSubmitting} className="run-btn">
+            Run
+          </button>
+          <button onClick={handleSubmit} disabled={isSubmitting} className="submit-btn">
             Submit
           </button>
-          <button onClick={() => setCode(problem?.starterCode || '')}>
+          <button onClick={() => setCode(problem?.starterCode || '')} disabled={isSubmitting}>
             Reset Code
           </button>
         </div>
 
         {/* Submission Result Display */}
         {submissionResult && (
-          <div className="submission-result">
-            <h4>Submission Result</h4>
+          <div className="submission-result" ref={resultScrollRef}>
+            <h4>
+              {submissionResult.isRun ? 'Run Result' : 'Submission Result'}
+            </h4>
             <div className={`result-status ${submissionResult.status === 'Accepted' ? 'success' : 'error'}`}>
               Status: {submissionResult.status}
             </div>
@@ -465,9 +566,20 @@ export default function Round1() {
               <div className="result-summary">
                 <p><strong>Marks:</strong> {submissionResult.marks || 0} / {submissionResult.result.summary.totalMarks || 10}</p>
                 <p><strong>Visible Tests:</strong> {submissionResult.result.summary.visiblePassed ? '✓ Passed' : '✗ Failed'}</p>
-                <p><strong>Hidden Tests:</strong> {submissionResult.result.summary.hiddenPassed ? '✓ Passed' : '✗ Failed'}</p>
-                {submissionResult.negativeMarks > 0 && (
+                
+                {!submissionResult.isRun && (
+                  <p><strong>Hidden Tests:</strong> {submissionResult.result.summary.hiddenPassed ? '✓ Passed' : '✗ Failed'}</p>
+                )}
+                
+                {/* Only show negative marks for actual submissions, not for Run */}
+                {!submissionResult.isRun && submissionResult.negativeMarks > 0 && (
                   <p className="negative-marks"><strong>Negative Marks:</strong> -{submissionResult.negativeMarks}</p>
+                )}
+                
+                {submissionResult.isRun && (
+                  <p className="run-note" style={{ color: '#666', fontStyle: 'italic' }}>
+                    Note: Run does not affect your score or negative marks.
+                  </p>
                 )}
               </div>
             )}

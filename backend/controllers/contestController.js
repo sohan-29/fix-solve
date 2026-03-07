@@ -193,3 +193,30 @@ exports.reportViolation = async (req, res) => {
     res.status(500).json({ error: "Failed to report violation", details: err.message });
   }
 };
+
+/**
+ * POST /api/contests/unlock-user
+ * Admin can manually unlock a locked out user
+ * Body: { userId }
+ */
+exports.unlockUser = async (req, res) => {
+  const { userId } = req.body;
+  if (!userId) {
+    return res.status(400).json({ error: "userId is required" });
+  }
+  try {
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    user.isLockedOut = false;
+    user.tabSwitchCount = 0;
+    await user.save();
+
+    res.json({
+      message: `User ${user.name} has been unlocked`,
+      isLockedOut: false
+    });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to unlock user", details: err.message });
+  }
+};
