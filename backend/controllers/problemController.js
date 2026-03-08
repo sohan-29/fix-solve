@@ -36,11 +36,14 @@ const getProblemByRound = async (req, res, next) => {
       // Get the correct code based on language
       if (parseInt(round) === 1) {
         // Round 1 - Debugging: use bugCodeByLanguage or fallback to bugCode
+        // Return as bugCode so frontend can display it properly
         if (problem.bugCodeByLanguage && problem.bugCodeByLanguage[language]) {
-          response.starterCode = problem.bugCodeByLanguage[language];
+          response.bugCode = problem.bugCodeByLanguage[language];
         } else {
-          response.starterCode = problem.bugCode || '';
+          response.bugCode = problem.bugCode || '';
         }
+        // Also set starterCode for fallback
+        response.starterCode = response.bugCode;
       } else {
         // Round 2 - Coding: use starterCodeByLanguage or fallback to starterCode
         if (problem.starterCodeByLanguage && problem.starterCodeByLanguage[language]) {
@@ -52,7 +55,6 @@ const getProblemByRound = async (req, res, next) => {
       
       // Don't include hidden test cases in response
       delete response.hiddenTestCases;
-      delete response.bugCode;
       delete response.bugCodeByLanguage;
       delete response.starterCodeByLanguage;
       

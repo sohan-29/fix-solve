@@ -18,71 +18,72 @@ const getLanguageId = (language) => LANGUAGE_IDS[language.toLowerCase()] || null
 
 const isLanguageSupported = (language) => LOCAL_LANGUAGES.includes(language.toLowerCase());
 
-// Normalize output for comparison - more flexible matching
+// Normalize output for comparison
 const normalizeOutput = (output) => {
   if (!output) return '';
-  // Remove leading/trailing whitespace, convert all whitespace to single spaces
-  return output.toString().trim()
-    .replace(/\r\n/g, '\n')
-    .replace(/\r/g, '\n')
-    .replace(/\n+/g, '\n')
-    .trim();
+  let result = output.toString().trim();
+  result = result.replace(/(\r\n|\r|\n)+/g, '\n').trim();
+  return result;
 };
 
-// Compare outputs more flexibly
+// Compare outputs with flexible matching
 const compareOutputs = (actual, expected) => {
   const normActual = normalizeOutput(actual);
   const normExpected = normalizeOutput(expected);
   
-  // Exact match
   if (normActual === normExpected) return true;
-  
-  // Handle numeric outputs (e.g., "8" vs "8\n")
-  if (normActual === normExpected) return true;
-  
-  // Try with ignoring case for strings
   if (normActual.toLowerCase() === normExpected.toLowerCase()) return true;
   
-  // Handle trailing newline differences
   const a = normActual.replace(/\n$/, '');
   const e = normExpected.replace(/\n$/, '');
   if (a === e) return true;
   
+  const aWords = a.split(/\s+/).filter(w => w.length > 0);
+  const eWords = e.split(/\s+/).filter(w => w.length > 0);
+  if (aWords.join(' ') === eWords.join(' ')) return true;
+  
   return false;
 };
 
-// Execute Python locally
+// Execute Python - uses spawnSync for reliable stdin handling
 const executePythonLocally = (sourceCode, stdin = '') => {
-  return new Promise((resolve) => {
-    const python = spawn('python', ['-c', sourceCode], {
+  const fs = require('fs');
+  const path = require('path');
+  const os = require('os');
+  
+  const tmpDir = path.join(os.tmpdir(), `python_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  
+  try {
+    fs.mkdirSync(tmpDir, { recursive: true });
+    const srcFile = path.join(tmpDir, 'main.py');
+    
+    fs.writeFileSync(srcFile, sourceCode);
+    
+    const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
+    
+    // Prepare stdin - ensure it ends with newline
+    let stdinData = stdin;
+    if (stdin && !stdin.endsWith('\n')) {
+      stdinData = stdin + '\n';
+    }
+    
+    const result = spawnSync(pythonCmd, [srcFile], {
+      input: stdinData,
       timeout: 10000,
       encoding: 'utf-8',
       maxBuffer: 10 * 1024 * 1024
     });
     
-    let stdout = '';
-    let stderr = '';
-    
-    python.stdout.on('data', (data) => { stdout += data; });
-    python.stderr.on('data', (data) => { stderr += data; });
-    
-    python.on('close', (code) => {
-      resolve({
-        stdout,
-        stderr,
-        error: code !== 0 ? new Error(stderr || 'Execution failed') : null
-      });
-    });
-    
-    python.on('error', (error) => {
-      resolve({ stdout: '', stderr: error.message, error });
-    });
-    
-    if (stdin) {
-      python.stdin.write(stdin);
-      python.stdin.end();
-    }
-  });
+    return {
+      stdout: result.stdout || '',
+      stderr: result.stderr || '',
+      error: result.error || (result.status !== 0 ? new Error(result.stderr || 'Execution failed') : null)
+    };
+  } catch (error) {
+    return { stdout: '', stderr: error.message, error };
+  } finally {
+    try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch (e) {}
+  }
 };
 
 // Execute C/C++ locally
@@ -109,8 +110,13 @@ const executeCLocally = (sourceCode, stdin = '', isCpp = false) => {
       return { stdout: '', stderr: compileResult.stderr || 'Compilation failed', error: new Error('Compilation failed') };
     }
     
+    let stdinData = stdin;
+    if (stdin && !stdin.endsWith('\n')) {
+      stdinData = stdin + '\n';
+    }
+    
     const runResult = spawnSync(outFile, [], {
-      input: stdin,
+      input: stdinData,
       timeout: 10000,
       encoding: 'utf-8',
       maxBuffer: 10 * 1024 * 1024
@@ -152,8 +158,13 @@ const executeJavaLocally = (sourceCode, stdin = '') => {
       return { stdout: '', stderr: compileResult.stderr || 'Compilation failed', error: new Error('Compilation failed') };
     }
     
+    let stdinData = stdin;
+    if (stdin && !stdin.endsWith('\n')) {
+      stdinData = stdin + '\n';
+    }
+    
     const runResult = spawnSync('java', ['-cp', tmpDir, className], {
-      input: stdin,
+      input: stdinData,
       timeout: 10000,
       encoding: 'utf-8',
       maxBuffer: 10 * 1024 * 1024
@@ -171,11 +182,11 @@ const executeJavaLocally = (sourceCode, stdin = '') => {
   }
 };
 
-// Local execution
-const executeLocally = async (sourceCode, language, stdin = '') => {
+// Local execution - NOT async, uses synchronous spawnSync
+const executeLocally = (sourceCode, language, stdin = '') => {
   switch (language.toLowerCase()) {
     case 'python':
-      return await executePythonLocally(sourceCode, stdin);
+      return executePythonLocally(sourceCode, stdin);
     case 'c':
       return executeCLocally(sourceCode, stdin, false);
     case 'cpp':
@@ -213,7 +224,7 @@ const submitCode = async (sourceCode, language, stdin = '') => {
   const judge0Available = await isJudge0Available();
   
   if (!judge0Available || !languageId) {
-    const localResult = await executeLocally(sourceCode, language, stdin);
+    const localResult = executeLocally(sourceCode, language, stdin);
     
     return {
       status: { 
@@ -236,7 +247,7 @@ const submitCode = async (sourceCode, language, stdin = '') => {
     
     return response.data;
   } catch (error) {
-    const localResult = await executeLocally(sourceCode, language, stdin);
+    const localResult = executeLocally(sourceCode, language, stdin);
     
     return {
       status: { 
@@ -261,21 +272,25 @@ const runAllTestCases = async (sourceCode, language, testCases) => {
     judge0Warning = 'Executed locally';
   }
   
-  // Process test cases one by one (to avoid race conditions)
   for (let index = 0; index < testCases.length; index++) {
     const testCase = testCases[index];
     try {
-      const localResult = await executeLocally(sourceCode, language, testCase.input);
+      // Get the input - handle both string and object formats
+      const input = typeof testCase === 'string' ? testCase : (testCase.input || '');
+      const expectedOutput = typeof testCase === 'string' ? '' : (testCase.output || testCase.expected || '');
+      
+      // Call synchronous executeLocally directly (not await)
+      const localResult = executeLocally(sourceCode, language, input);
       
       const actualOutput = localResult.stdout || '';
-      const expectedOutput = testCase.output || '';
+      const expected = expectedOutput || '';
       
-      const isPassed = compareOutputs(actualOutput, expectedOutput);
+      const isPassed = compareOutputs(actualOutput, expected);
       
       results.push({
         testCaseNumber: index + 1,
-        input: testCase.input,
-        expectedOutput: normalizeOutput(expectedOutput),
+        input: input,
+        expectedOutput: normalizeOutput(expected),
         actualOutput: normalizeOutput(actualOutput),
         status: localResult.error ? 'Runtime Error' : (isPassed ? 'Accepted' : 'Wrong Answer'),
         isPassed: isPassed,
@@ -284,8 +299,8 @@ const runAllTestCases = async (sourceCode, language, testCases) => {
     } catch (error) {
       results.push({
         testCaseNumber: index + 1,
-        input: testCase.input,
-        expectedOutput: normalizeOutput(testCase.output || ''),
+        input: typeof testCase === 'string' ? testCase : (testCase.input || ''),
+        expectedOutput: normalizeOutput(typeof testCase === 'string' ? '' : (testCase.output || testCase.expected || '')),
         actualOutput: `Error: ${error.message}`,
         status: 'Runtime Error',
         isPassed: false,

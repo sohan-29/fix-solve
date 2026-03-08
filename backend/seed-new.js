@@ -38,10 +38,19 @@ int add(int a, int b) {
   return a - b;
 }`,
       java: `// Fix the bug in this function
-import java.util.Scanner;\n\npublic class Main {
+import java.util.Scanner;
+
+public class Main {
     public static int add(int a, int b) {
         // should return sum
         return a - b;
+    }
+    
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        int a = sc.nextInt();
+        int b = sc.nextInt();
+        System.out.print(add(a, b));
     }
 }`,
       python: `# Fix the bug in this function
@@ -78,10 +87,19 @@ int add(int a, int b) {
   return a - b;
 }`,
       java: `// Fix the bug in this function
-import java.util.Scanner;\n\npublic class Main {
+import java.util.Scanner;
+
+public class Main {
     public static int add(int a, int b) {
         // should return sum
         return a - b;
+    }
+    
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        int a = sc.nextInt();
+        int b = sc.nextInt();
+        System.out.print(add(a, b));
     }
 }`,
       python: `# Fix the bug in this function
@@ -138,12 +156,20 @@ string checkEvenOdd(int n) {
         return "Odd";
 }`,
       java: `// Fix the bug in this function
-import java.util.Scanner;\n\npublic class Main {
+import java.util.Scanner;
+
+public class Main {
     public static String checkEvenOdd(int n) {
         if (n % 2 == 1)  // Bug: should be == 0 for even
             return "Even";
         else
             return "Odd";
+    }
+    
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        int n = sc.nextInt();
+        System.out.print(checkEvenOdd(n));
     }
 }`,
       python: `# Fix the bug in this function
@@ -178,12 +204,20 @@ string checkEvenOdd(int n) {
         return "Odd";
 }`,
       java: `// Fix the bug in this function
-import java.util.Scanner;\n\npublic class Main {
+import java.util.Scanner;
+
+public class Main {
     public static String checkEvenOdd(int n) {
         if (n % 2 == 1)  // Bug: should be == 0 for even
             return "Even";
         else
             return "Odd";
+    }
+    
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        int n = sc.nextInt();
+        System.out.print(checkEvenOdd(n));
     }
 }`,
       python: `# Fix the bug in this function
@@ -243,13 +277,22 @@ int maxOfTwo(int a, int b) {
         return a;
 }`,
       java: `// Fix the bug in this function
-import java.util.Scanner;\n\npublic class Main {
+import java.util.Scanner;
+
+public class Main {
     public static int maxOfTwo(int a, int b) {
         // Bug: returns wrong value - fix this!
         if (a > b)
             return b;
         else
             return a;
+    }
+    
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        int a = sc.nextInt();
+        int b = sc.nextInt();
+        System.out.print(maxOfTwo(a, b));
     }
 }`,
       python: `# Fix the bug in this function
@@ -288,13 +331,22 @@ int maxOfTwo(int a, int b) {
         return a;
 }`,
       java: `// Fix the bug in this function
-import java.util.Scanner;\n\npublic class Main {
+import java.util.Scanner;
+
+public class Main {
     public static int maxOfTwo(int a, int b) {
         // Bug: returns wrong value - fix this!
         if (a > b)
             return b;
         else
             return a;
+    }
+    
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        int a = sc.nextInt();
+        int b = sc.nextInt();
+        System.out.print(maxOfTwo(a, b));
     }
 }`,
       python: `# Fix the bug in this function
@@ -348,7 +400,9 @@ using namespace std;
 long long factorial(int n) {
   // your code here
 }`,
-      java: `import java.util.Scanner;\n\npublic class Main {
+      java: `import java.util.Scanner;
+
+public class Main {
     // Write a function that returns the factorial of a number
     public static long factorial(int n) {
         // your code here
@@ -396,7 +450,9 @@ using namespace std;
 long long fibonacci(int n) {
   // your code here
 }`,
-      java: `import java.util.Scanner;\n\npublic class Main {
+      java: `import java.util.Scanner;
+
+public class Main {
     // Write a function that returns the nth Fibonacci number
     public static long fibonacci(int n) {
         // your code here
@@ -444,7 +500,9 @@ using namespace std;
 int isPrime(int n) {
   // your code here
 }`,
-      java: `import java.util.Scanner;\n\npublic class Main {
+      java: `import java.util.Scanner;
+
+public class Main {
     // Write a function that returns 1 if n is prime, 0 otherwise
     public static int isPrime(int n) {
         // your code here

@@ -5,12 +5,11 @@ import axios from '../api';
 export default function Instructions() {
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [approvalStatus, setApprovalStatus] = useState('pending'); // 'pending', 'approved', 'waiting', 'rejected'
+  const [approvalStatus, setApprovalStatus] = useState('pending');
   const [error, setError] = useState('');
   const navigate = useNavigate();
   const userId = localStorage.getItem('userId');
 
-  // Poll for approval status
   useEffect(() => {
     let interval;
     
@@ -18,7 +17,7 @@ export default function Instructions() {
       if (!userId) return;
       
       try {
-        const res = await axios.get(`/api/users/${userId}/approval-status`);
+        const res = await axios.get(`/users/${userId}/approval-status`);
         if (res.data.isApproved) {
           setApprovalStatus('approved');
           clearInterval(interval);
@@ -32,7 +31,6 @@ export default function Instructions() {
 
     if (userId) {
       checkApprovalStatus();
-      // Poll every 3 seconds
       interval = setInterval(checkApprovalStatus, 3000);
     }
 
@@ -42,7 +40,7 @@ export default function Instructions() {
   const handleRequestApproval = async () => {
     setLoading(true);
     try {
-      await axios.post(`/api/users/${userId}/request-approval`);
+      await axios.post(`/users/${userId}/request-approval`);
       setApprovalStatus('waiting');
     } catch (err) {
       console.error('Error requesting approval:', err);
@@ -54,7 +52,6 @@ export default function Instructions() {
 
   const handleStartRound1 = async () => {
     if (!userId) {
-      // User not registered, go to home first
       navigate('/');
       return;
     }
@@ -62,14 +59,10 @@ export default function Instructions() {
     setLoading(true);
     try {
       const userName = localStorage.getItem('userName');
-      
-      // Start round 1
-      await axios.post('/api/contests/start', { name: userName, round: 1 });
-      
+      await axios.post('/contests/start', { name: userName, round: 1 });
       navigate('/round1');
     } catch (err) {
       console.error('Error starting round:', err);
-      // Still navigate to round1 even if there's an error
       navigate('/round1');
     } finally {
       setLoading(false);
@@ -81,7 +74,6 @@ export default function Instructions() {
       <div className="instructions-container">
         <h1>Contest Instructions</h1>
 
-        {/* Show approval status if user is not approved */}
         {approvalStatus === 'waiting' && (
           <div className="approval-waiting-box">
             <div className="waiting-icon">⏳</div>

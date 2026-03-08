@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import axios from '../api';
 import { useNavigate } from 'react-router-dom';
 import useAntiCheat from '../hooks/useAntiCheat';
+import Editor from '@monaco-editor/react';
 
 const LANGUAGES = [
   { id: 'c', name: 'C' },
@@ -27,7 +28,7 @@ export default function Round2() {
   const [timerDuration, setTimerDuration] = useState(2700);
   const [isLocked, setIsLocked] = useState(false);
   const [submissionResult, setSubmissionResult] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false); // Loading state
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const userId = localStorage.getItem('userId');
   const { warnings, isLockedOut, MAX_WARNINGS } = useAntiCheat(userId);
@@ -46,28 +47,22 @@ export default function Round2() {
     return `${mins}:${s.toString().padStart(2, '0')}`;
   };
 
-  // Fetch timer from backend
   const fetchTimer = async () => {
     try {
-      const res = await axios.get(`/api/users/${userId}/timer?round=2`);
+      const res = await axios.get(`/users/${userId}/timer?round=2`);
       const { remaining, duration, timerStart } = res.data;
       setTimerDuration(duration || 2700);
       setElapsedTime(remaining);
-      
-      // Save to sessionStorage for persistence across refreshes
       sessionStorage.setItem('round2Remaining', remaining.toString());
       sessionStorage.setItem('round2Duration', (duration || 2700).toString());
-      
       if (timerStart) {
         setStartTime(new Date(timerStart));
         sessionStorage.setItem('round2TimerStart', timerStart);
       }
-      
       timerFetchedRef.current = true;
       return res.data;
     } catch (err) {
       console.error('Error fetching timer:', err);
-      // Try to load from sessionStorage as fallback
       const savedRemaining = sessionStorage.getItem('round2Remaining');
       const savedDuration = sessionStorage.getItem('round2Duration');
       if (savedRemaining) {
@@ -81,14 +76,10 @@ export default function Round2() {
     }
   };
 
-  // Check lock status on mount - always fetch from server
   const checkLockStatus = async () => {
     try {
-      const res = await axios.get(`/api/users/${userId}`);
-      // Server has the latest lock status - use that directly
+      const res = await axios.get(`/users/${userId}`);
       setIsLocked(res.data.isLockedOut || false);
-      
-      // Also check if user is approved
       if (!res.data.isApproved && !res.data.isLockedOut) {
         navigate('/instructions');
       }
@@ -97,10 +88,9 @@ export default function Round2() {
     }
   };
 
-  // Fetch submitted code for a problem
   const fetchSubmittedCode = async (problemId) => {
     try {
-      const res = await axios.get(`/api/users/${userId}`);
+      const res = await axios.get(`/users/${userId}`);
       const userData = res.data;
       const submittedCodeMap = userData.round2SubmittedCode || {};
       return submittedCodeMap[problemId] || null;
@@ -112,7 +102,7 @@ export default function Round2() {
 
   const fetchProblems = async (language) => {
     try {
-      const res = await axios.get(`/api/problems/round/2?language=${language}`);
+      const res = await axios.get(`/problems/round/2?language=${language}`);
       const problemsData = res.data;
       const problemsArray = Array.isArray(problemsData) ? problemsData : [problemsData];
       setProblems(problemsArray);
@@ -131,19 +121,27 @@ export default function Round2() {
 
   useEffect(() => {
     const init = async () => {
-      // Check lock status from server
       await checkLockStatus();
+      if (sessionStorage.getItem('isLocked') === 'true') {
+        setIsLocked(true);
+      }
+      // First fetch timer to check if it already exists
+      const timerData = await fetchTimer();
       
-      try {
-        await axios.post(`/api/users/${userId}/timer/start`, { round: 2, duration: 2700 });
-      } catch (err) {}
-      await fetchTimer();
+      // Only start timer if it doesn't already exist
+      if (!timerData || !timerData.timerStart) {
+        try {
+          await axios.post(`/users/${userId}/timer/start`, { round: 2, duration: 2700 });
+          // Fetch again after starting to get updated timer
+          await fetchTimer();
+        } catch (err) {
+          console.error('Error starting timer:', err);
+        }
+      }
+      
       await fetchProblems(selectedLanguage);
     };
-    
     init();
-
-    // Cleanup timer on unmount
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -151,22 +149,17 @@ export default function Round2() {
     };
   }, []);
 
-  // Timer effect - uses backend-controlled timer
   useEffect(() => {
     if (!loading && timerFetchedRef.current) {
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
-      
       timerRef.current = setInterval(() => {
-        axios.get(`/api/users/${userId}/timer?round=2`)
+        axios.get(`/users/${userId}/timer?round=2`)
           .then(res => {
             const { remaining, isExpired } = res.data;
             setElapsedTime(remaining);
-            
-            // Save to sessionStorage for persistence
             sessionStorage.setItem('round2Remaining', remaining.toString());
-            
             if (isExpired) {
               alert('Time is up! Round 2 has ended.');
               navigate('/round-complete', { state: { timeTaken: timerDuration, round: 2 } });
@@ -174,7 +167,6 @@ export default function Round2() {
           })
           .catch(err => { console.error('Error fetching timer:', err); });
       }, 1000);
-      
       return () => {
         if (timerRef.current) {
           clearInterval(timerRef.current);
@@ -183,7 +175,7 @@ export default function Round2() {
     }
   }, [loading, userId, timerDuration, navigate]);
 
-  // Auto-scroll to results when submissionResult changes
+  // Auto-scroll to results when they appear
   useEffect(() => {
     if (submissionResult && resultScrollRef.current) {
       setTimeout(() => {
@@ -192,7 +184,6 @@ export default function Round2() {
     }
   }, [submissionResult]);
 
-  // Handle problem selection
   const handleProblemSelect = async (index) => {
     const selectedProblem = problems[index];
     if (selectedProblem) {
@@ -205,20 +196,16 @@ export default function Round2() {
     }
   };
 
-  // Handle language change
   const handleLanguageChange = async (e) => {
     const newLang = e.target.value;
     const currentProblemIndex = selectedProblemIndex;
     const currentProblem = problems[currentProblemIndex];
-    
     setSelectedLanguage(newLang);
-    
     try {
-      const res = await axios.get(`/api/problems/round/2?language=${newLang}`);
+      const res = await axios.get(`/problems/round/2?language=${newLang}`);
       const problemsData = res.data;
       const problemsArray = Array.isArray(problemsData) ? problemsData : [problemsData];
       setProblems(problemsArray);
-
       const sameProblem = problemsArray.find(p => p.title === currentProblem?.title);
       if (sameProblem) {
         const newIndex = problemsArray.findIndex(p => p.title === currentProblem.title);
@@ -238,13 +225,11 @@ export default function Round2() {
     }
   };
 
-  // Disable copy/paste - prevent cheating
   const disableCopyPaste = (e) => {
     e.preventDefault();
     alert('Copy/Paste is disabled during the contest!');
   };
-  
-  // Auto enter fullscreen on mount
+
   useEffect(() => {
     const enterFullscreen = () => {
       if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
@@ -253,10 +238,7 @@ export default function Round2() {
         });
       }
     };
-    
-    // Enter fullscreen after a short delay to ensure page is loaded
     const timer = setTimeout(enterFullscreen, 1000);
-    
     return () => clearTimeout(timer);
   }, []);
 
@@ -270,32 +252,26 @@ export default function Round2() {
     }
   };
 
-  // Handle Run (test code without submission)
   const handleRun = async () => {
     setIsSubmitting(true);
     setSubmissionResult(null);
     try {
-      const res = await axios.post('/api/submissions', {
+      const res = await axios.post('/submissions', {
         problemId: problem?._id || null,
         code,
         language: selectedLanguage,
         userId,
         round: 2,
-        isRun: true // Flag for Run mode - no negative marks
+        isRun: true
       });
-
       const result = res.data;
       console.log('Run result:', result);
-      
-      // For Run, check if visible tests passed
       const isVisiblePassed = result.result?.summary?.visiblePassed === true || result.visibleTestPassed === true;
       const status = isVisiblePassed ? 'Accepted' : 'Wrong Answer';
-
-      // Set submission result for UI display
       setSubmissionResult({
         ...result,
         status: status,
-        isRun: true, // Flag to indicate this is a Run result
+        isRun: true,
         result: result.result || {
           summary: {
             visiblePassed: isVisiblePassed,
@@ -328,7 +304,7 @@ export default function Round2() {
     try {
       const userId = localStorage.getItem('userId');
       const userName = localStorage.getItem('userName');
-      const res = await axios.post('/api/submissions', {
+      const res = await axios.post('/submissions', {
         problemId: problem?._id || null,
         code,
         language: selectedLanguage,
@@ -338,9 +314,7 @@ export default function Round2() {
       });
       const result = res.data;
       const status = result.result?.summary?.allPassed ? 'Accepted' : result.status;
-
       setSubmissionResult(result);
-
       if (status === 'Accepted') {
         const newSolvedProblems = new Set(solvedProblems);
         newSolvedProblems.add(problem._id);
@@ -350,7 +324,7 @@ export default function Round2() {
           const elapsed = timerDuration - elapsedTime;
           const penalty = totalMistakes * 5;
           const total = elapsed + penalty;
-          await axios.post('/api/contests/end', { name: userName, round: 2, timeTaken: total });
+          await axios.post('/contests/end', { name: userName, round: 2, timeTaken: total });
           navigate('/round-complete', { state: { timeTaken: elapsed, mistakes: totalMistakes, penalty, round: 2 } });
         } else {
           const nextIndex = problems.findIndex(p => !newSolvedProblems.has(p._id));
@@ -397,9 +371,9 @@ export default function Round2() {
         <div className="timer">Time: {formatTime(elapsedTime)} | Mistakes: {totalMistakes} | Solved: {solvedProblems.size}/{problems.length}</div>
         <button onClick={toggleFullscreen} className="fullscreen-btn">{isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}</button>
       </div>
-      
+
       {warnings > 0 && !isLockedOut && <div className="warning-banner">Warning! Tab switch detected.</div>}
-      
+
       {problems.length > 1 && (
         <div className="problem-selector">
           <label>Select Problem: </label>
@@ -408,7 +382,7 @@ export default function Round2() {
           </select>
         </div>
       )}
-      
+
       <div className="round-content-wrapper">
         {problem && (
           <div className="problem-description">
@@ -417,36 +391,51 @@ export default function Round2() {
             {problem.inputFormat && <p><strong>Input Format:</strong> {problem.inputFormat}</p>}
             {problem.outputFormat && <p><strong>Output Format:</strong> {problem.outputFormat}</p>}
             {problem.constraints && <p><strong>Constraints:</strong> {problem.constraints}</p>}
-            {problem.sampleInput && <div><strong>Sample Input:</strong><pre style={{background:'#f4f4f4',padding:'10px'}}>{problem.sampleInput}</pre></div>}
-            {problem.sampleOutput && <div><strong>Sample Output:</strong><pre style={{background:'#f4f4f4',padding:'10px'}}>{problem.sampleOutput}</pre></div>}
-            {problem.testCases && problem.testCases.length > 0 && <button onClick={() => setShowTestCases(!showTestCases)} style={{marginTop:'10px'}}>{showTestCases ? 'Hide' : 'Show'} Test Cases</button>}
+            {problem.sampleInput && <div><strong>Sample Input:</strong><pre style={{ background: '#f4f4f4', padding: '10px' }}>{problem.sampleInput}</pre></div>}
+            {problem.sampleOutput && <div><strong>Sample Output:</strong><pre style={{ background: '#f4f4f4', padding: '10px' }}>{problem.sampleOutput}</pre></div>}
+            {problem.testCases && problem.testCases.length > 0 && <button onClick={() => setShowTestCases(!showTestCases)} style={{ marginTop: '10px' }}>{showTestCases ? 'Hide' : 'Show'} Test Cases</button>}
             {showTestCases && problem.testCases && (
-              <div style={{marginTop:'10px'}}>
+              <div style={{ marginTop: '10px' }}>
                 <h4>Test Cases:</h4>
                 {problem.testCases.map((tc, i) => (
-                  <div key={i} style={{marginBottom:'10px',border:'1px solid #ddd',padding:'10px'}}>
-                    <strong>Test Case {i+1}:</strong><br/>
-                    Input: <pre style={{display:'inline'}}>{tc.input}</pre><br/>
-                    Output: <pre style={{display:'inline'}}>{tc.output}</pre>
+                  <div key={i} style={{ marginBottom: '10px', border: '1px solid #ddd', padding: '10px' }}>
+                    <strong>Test Case {i + 1}:</strong><br />
+                    Input: <pre style={{ display: 'inline' }}>{tc.input}</pre><br />
+                    Output: <pre style={{ display: 'inline' }}>{tc.output}</pre>
                   </div>
                 ))}
               </div>
             )}
           </div>
         )}
-        
+
         <div className="language-selector">
           <label>Select Language: </label>
           <select id="language" value={selectedLanguage} onChange={handleLanguageChange}>
             {LANGUAGES.map(lang => (<option key={lang.id} value={lang.id}>{lang.name}</option>))}
           </select>
         </div>
-        
-        <div className="code-editor-wrapper">
-          <textarea className="code-textarea" rows={15} cols={60} value={code} onChange={e => setCode(e.target.value)} onCopy={disableCopyPaste} onCut={disableCopyPaste} onPaste={disableCopyPaste} draggable={false} />
+
+        <div className="code-editor-wrapper" style={{ height: '500px', border: '1px solid #333' }}>
+          <Editor
+            height="100%"
+            language={selectedLanguage === 'c' ? 'cpp' : selectedLanguage}
+            value={code}
+            theme="vs-dark"
+            onChange={(value) => setCode(value || '')}
+            options={{
+              minimap: { enabled: false },
+              fontSize: 14,
+              scrollBeyondLastLine: false,
+              automaticLayout: true,
+              contextmenu: false,
+              readOnly: false,
+              padding: { top: 10, bottom: 10 },
+              fontFamily: "'Courier New', Courier, monospace",
+            }}
+          />
         </div>
 
-        {/* Loading overlay */}
         {isSubmitting && (
           <div className="submission-loading">
             <div className="loading-spinner"></div>
@@ -460,14 +449,13 @@ export default function Round2() {
           <button onClick={() => setCode(problem?.starterCode || '')} disabled={isSubmitting}>Reset Code</button>
         </div>
 
-        {/* Submission Result Display */}
         {submissionResult && (
           <div className="submission-result" ref={resultScrollRef}>
             <h4>{submissionResult.isRun ? 'Run Result' : 'Submission Result'}</h4>
             <div className={`result-status ${submissionResult.status === 'Accepted' ? 'success' : 'error'}`}>
               Status: {submissionResult.status}
             </div>
-            
+
             {submissionResult.result?.summary && (
               <div className="result-summary">
                 <p><strong>Marks:</strong> {submissionResult.marks || 0} / {submissionResult.result.summary.totalMarks || 10}</p>
@@ -489,27 +477,43 @@ export default function Round2() {
               </div>
             )}
 
-            {submissionResult.result?.visible?.results && !submissionResult.result.summary.visiblePassed && (
-              <div className="test-case-failures">
-                <h5>Test Case Failures:</h5>
+            {/* Always show test case results, not just failures */}
+            {submissionResult.result?.visible?.results && submissionResult.result.visible.results.length > 0 && (
+              <div className="test-case-results">
+                <h5>Test Case Results:</h5>
                 {submissionResult.result.visible.results.map((tc, index) => (
-                  !tc.isPassed && (
-                    <div key={index} className="failure-case">
-                      <p><strong>Test Case {tc.testCaseNumber}:</strong></p>
-                      <div className="case-detail">
-                        <span className="label">Input:</span>
-                        <pre>{tc.input}</pre>
-                      </div>
-                      <div className="case-detail">
-                        <span className="label">Expected:</span>
-                        <pre className="expected">{tc.expectedOutput}</pre>
-                      </div>
-                      <div className="case-detail">
-                        <span className="label">Got:</span>
-                        <pre className="got">{tc.actualOutput}</pre>
-                      </div>
+                  <div key={index} style={{ 
+                    marginBottom: '15px', 
+                    padding: '10px', 
+                    borderRadius: '4px', 
+                    background: tc.isPassed ? '#1a3320' : '#331a1a',
+                    border: tc.isPassed ? '1px solid #00ff00' : '1px solid #ff6b6b'
+                  }}>
+                    <p style={{ marginBottom: '8px' }}>
+                      <strong>Test Case {tc.testCaseNumber}:</strong> 
+                      <span style={{ marginLeft: '10px', color: tc.isPassed ? '#00ff00' : '#ff6b6b' }}>
+                        {tc.isPassed ? '✓ Passed' : '✗ Failed'}
+                      </span>
+                    </p>
+                    <div className="case-detail">
+                      <span className="label">Input:</span>
+                      <pre style={{ background: '#0d0d0d', padding: '5px', margin: 0 }}>{tc.input || '(no input)'}</pre>
                     </div>
-                  )
+                    <div className="case-detail">
+                      <span className="label">Expected:</span>
+                      <pre style={{ background: '#0d1a0d', color: '#00ff00', padding: '5px', margin: 0 }}>{tc.expectedOutput || '(empty)'}</pre>
+                    </div>
+                    <div className="case-detail">
+                      <span className="label">Got:</span>
+                      <pre style={{ background: '#1a0d0d', color: '#ff6b6b', padding: '5px', margin: 0 }}>{tc.actualOutput || '(empty)'}</pre>
+                    </div>
+                    {tc.compile_output && (
+                      <div className="case-detail">
+                        <span className="label">Error:</span>
+                        <pre style={{ color: '#ff6b6b', padding: '5px', margin: 0 }}>{tc.compile_output}</pre>
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             )}

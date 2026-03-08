@@ -1,4 +1,4 @@
-  import { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from '../api';
 
@@ -9,15 +9,15 @@ export default function Home() {
 
   const handleStart = async () => {
     try {
-      // register user if not exists
-      const res = await axios.post('/api/users/register', { name });
+      // register user if not exists - use relative path since api.js has baseURL /api
+      const res = await axios.post('/users/register', { name });
       const user = res.data;
       localStorage.setItem('userId', user._id);
       localStorage.setItem('userName', name);
       
       // Automatically request approval after registration
       try {
-        await axios.post(`/api/users/${user._id}/request-approval`);
+        await axios.post(`/users/${user._id}/request-approval`);
       } catch (approvalErr) {
         console.log('Auto approval request failed, user can request manually');
       }

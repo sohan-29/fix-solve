@@ -38,20 +38,26 @@ int add(int a, int b) {
   return a - b;
 }`,
       java: `// Fix the bug in this function
-import java.util.Scanner;\n\npublic class Main {
+import java.util.Scanner;
+
+public class Main {
     public static int add(int a, int b) {
-        // should return sum
         return a - b;
     }
+    
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        int a = sc.nextInt();
+        int b = sc.nextInt();
+        System.out.print(add(a, b));
+    }
 }`,
-      python: `# Fix the bug in this function
-def add(a, b):
-    # should return sum
+      python: `def add(a, b):
     return a - b
 
 if __name__ == "__main__":
-    a = int(input().strip())
-    b = int(input().strip())
+    a = int(input())
+    b = int(input())
     print(add(a, b))`
     },
     starterCode: `// Fix the bug in this function
@@ -78,20 +84,26 @@ int add(int a, int b) {
   return a - b;
 }`,
       java: `// Fix the bug in this function
-import java.util.Scanner;\n\npublic class Main {
+import java.util.Scanner;
+
+public class Main {
     public static int add(int a, int b) {
-        // should return sum
         return a - b;
     }
+    
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        int a = sc.nextInt();
+        int b = sc.nextInt();
+        System.out.print(add(a, b));
+    }
 }`,
-      python: `# Fix the bug in this function
-def add(a, b):
-    # should return sum
+      python: `def add(a, b):
     return a - b
 
 if __name__ == "__main__":
-    a = int(input().strip())
-    b = int(input().strip())
+    a = int(input())
+    b = int(input())
     print(add(a, b))`
     },
     supportedLanguages: ['c', 'cpp', 'java', 'python'],
@@ -122,7 +134,7 @@ if __name__ == "__main__":
 #include <stdio.h>
 
 const char* checkEvenOdd(int n) {
-    if (n % 2 == 1)  // Bug: should be == 0 for even
+    if (n % 2 == 1)
         return "Even";
     else
         return "Odd";
@@ -132,29 +144,36 @@ const char* checkEvenOdd(int n) {
 using namespace std;
 
 string checkEvenOdd(int n) {
-    if (n % 2 == 1)  // Bug: should be == 0 for even
+    if (n % 2 == 1)
         return "Even";
     else
         return "Odd";
 }`,
       java: `// Fix the bug in this function
-import java.util.Scanner;\n\npublic class Main {
+import java.util.Scanner;
+
+public class Main {
     public static String checkEvenOdd(int n) {
-        if (n % 2 == 1)  // Bug: should be == 0 for even
+        if (n % 2 == 1)
             return "Even";
         else
             return "Odd";
     }
+    
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        int n = sc.nextInt();
+        System.out.print(checkEvenOdd(n));
+    }
 }`,
-      python: `# Fix the bug in this function
-def checkEvenOdd(n):
-    if n % 2 == 1:  # Bug: should be == 0 for even
+      python: `def checkEvenOdd(n):
+    if n % 2 == 1:
         return "Even"
     else:
         return "Odd"
 
 if __name__ == "__main__":
-    n = int(input().strip())
+    n = int(input())
     print(checkEvenOdd(n))`
     },
     starterCodeByLanguage: {
@@ -162,7 +181,7 @@ if __name__ == "__main__":
 #include <stdio.h>
 
 const char* checkEvenOdd(int n) {
-    if (n % 2 == 1)  // Bug: should be == 0 for even
+    if (n % 2 == 1)
         return "Even";
     else
         return "Odd";
@@ -172,29 +191,36 @@ const char* checkEvenOdd(int n) {
 using namespace std;
 
 string checkEvenOdd(int n) {
-    if (n % 2 == 1)  // Bug: should be == 0 for even
+    if (n % 2 == 1)
         return "Even";
     else
         return "Odd";
 }`,
       java: `// Fix the bug in this function
-import java.util.Scanner;\n\npublic class Main {
+import java.util.Scanner;
+
+public class Main {
     public static String checkEvenOdd(int n) {
-        if (n % 2 == 1)  // Bug: should be == 0 for even
+        if (n % 2 == 1)
             return "Even";
         else
             return "Odd";
     }
+    
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        int n = sc.nextInt();
+        System.out.print(checkEvenOdd(n));
+    }
 }`,
-      python: `# Fix the bug in this function
-def checkEvenOdd(n):
-    if n % 2 == 1:  # Bug: should be == 0 for even
+      python: `def checkEvenOdd(n):
+    if n % 2 == 1:
         return "Even"
     else:
         return "Odd"
 
 if __name__ == "__main__":
-    n = int(input().strip())
+    n = int(input())
     print(checkEvenOdd(n))`
     },
     supportedLanguages: ['c', 'cpp', 'java', 'python'],
@@ -225,7 +251,6 @@ if __name__ == "__main__":
 #include <stdio.h>
 
 int maxOfTwo(int a, int b) {
-    // Bug: returns wrong value - fix this!
     if (a > b)
         return b;
     else
@@ -236,33 +261,38 @@ int maxOfTwo(int a, int b) {
 using namespace std;
 
 int maxOfTwo(int a, int b) {
-    // Bug: returns wrong value - fix this!
     if (a > b)
         return b;
     else
         return a;
 }`,
       java: `// Fix the bug in this function
-import java.util.Scanner;\n\npublic class Main {
+import java.util.Scanner;
+
+public class Main {
     public static int maxOfTwo(int a, int b) {
-        // Bug: returns wrong value - fix this!
         if (a > b)
             return b;
         else
             return a;
     }
+    
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        int a = sc.nextInt();
+        int b = sc.nextInt();
+        System.out.print(maxOfTwo(a, b));
+    }
 }`,
-      python: `# Fix the bug in this function
-def maxOfTwo(a, b):
-    # Bug: returns wrong value - fix this!
+      python: `def maxOfTwo(a, b):
     if a > b:
         return b
     else:
         return a
 
 if __name__ == "__main__":
-    a = int(input().strip())
-    b = int(input().strip())
+    a = int(input())
+    b = int(input())
     print(maxOfTwo(a, b))`
     },
     starterCodeByLanguage: {
@@ -270,7 +300,6 @@ if __name__ == "__main__":
 #include <stdio.h>
 
 int maxOfTwo(int a, int b) {
-    // Bug: returns wrong value - fix this!
     if (a > b)
         return b;
     else
@@ -281,33 +310,38 @@ int maxOfTwo(int a, int b) {
 using namespace std;
 
 int maxOfTwo(int a, int b) {
-    // Bug: returns wrong value - fix this!
     if (a > b)
         return b;
     else
         return a;
 }`,
       java: `// Fix the bug in this function
-import java.util.Scanner;\n\npublic class Main {
+import java.util.Scanner;
+
+public class Main {
     public static int maxOfTwo(int a, int b) {
-        // Bug: returns wrong value - fix this!
         if (a > b)
             return b;
         else
             return a;
     }
+    
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        int a = sc.nextInt();
+        int b = sc.nextInt();
+        System.out.print(maxOfTwo(a, b));
+    }
 }`,
-      python: `# Fix the bug in this function
-def maxOfTwo(a, b):
-    # Bug: returns wrong value - fix this!
+      python: `def maxOfTwo(a, b):
     if a > b:
         return b
     else:
         return a
 
 if __name__ == "__main__":
-    a = int(input().strip())
-    b = int(input().strip())
+    a = int(input())
+    b = int(input())
     print(maxOfTwo(a, b))`
     },
     supportedLanguages: ['c', 'cpp', 'java', 'python'],
@@ -327,7 +361,7 @@ if __name__ == "__main__":
   // Round 2 - Coding Problems
   {
     title: 'Factorial',
-    description: 'Write a function that returns the factorial of a given number n. factorial(n) = n * (n-1) * (n-2) * ... * 1. Note: factorial(0) = 1',
+    description: 'Write a function that returns the factorial of a given number n.',
     roundType: 2,
     inputFormat: 'A single integer n (0 <= n <= 20)',
     outputFormat: 'The factorial of n',
@@ -337,27 +371,31 @@ if __name__ == "__main__":
     starterCodeByLanguage: {
       c: `#include <stdio.h>
 
-// Write a function that returns the factorial of a number
 long long factorial(int n) {
-  // your code here
 }`,
       cpp: `#include <iostream>
 using namespace std;
 
-// Write a function that returns the factorial of a number
 long long factorial(int n) {
-  // your code here
 }`,
-      java: `import java.util.Scanner;\n\npublic class Main {
-    // Write a function that returns the factorial of a number
+      java: `import java.util.Scanner;
+
+public class Main {
     public static long factorial(int n) {
-        // your code here
+    }
+    
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        int n = sc.nextInt();
+        System.out.print(factorial(n));
     }
 }`,
-      python: `# Write a function that returns the factorial of a number
-def factorial(n):
-    # your code here
-    pass`
+      python: `def factorial(n):
+    pass
+
+if __name__ == "__main__":
+    n = int(input())
+    print(factorial(n))`
     },
     supportedLanguages: ['c', 'cpp', 'java', 'python'],
     testCases: [
@@ -375,7 +413,7 @@ def factorial(n):
   },
   {
     title: 'Fibonacci Number',
-    description: 'Write a function that returns the nth Fibonacci number. F(0) = 0, F(1) = 1, F(n) = F(n-1) + F(n-2)',
+    description: 'Write a function that returns the nth Fibonacci number.',
     roundType: 2,
     inputFormat: 'A single integer n (0 <= n <= 30)',
     outputFormat: 'The nth Fibonacci number',
@@ -385,27 +423,31 @@ def factorial(n):
     starterCodeByLanguage: {
       c: `#include <stdio.h>
 
-// Write a function that returns the nth Fibonacci number
 long long fibonacci(int n) {
-  // your code here
 }`,
       cpp: `#include <iostream>
 using namespace std;
 
-// Write a function that returns the nth Fibonacci number
 long long fibonacci(int n) {
-  // your code here
 }`,
-      java: `import java.util.Scanner;\n\npublic class Main {
-    // Write a function that returns the nth Fibonacci number
+      java: `import java.util.Scanner;
+
+public class Main {
     public static long fibonacci(int n) {
-        // your code here
+    }
+    
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        int n = sc.nextInt();
+        System.out.print(fibonacci(n));
     }
 }`,
-      python: `# Write a function that returns the nth Fibonacci number
-def fibonacci(n):
-    # your code here
-    pass`
+      python: `def fibonacci(n):
+    pass
+
+if __name__ == "__main__":
+    n = int(input())
+    print(fibonacci(n))`
     },
     supportedLanguages: ['c', 'cpp', 'java', 'python'],
     testCases: [
@@ -433,27 +475,31 @@ def fibonacci(n):
     starterCodeByLanguage: {
       c: `#include <stdio.h>
 
-// Write a function that returns 1 if n is prime, 0 otherwise
 int isPrime(int n) {
-  // your code here
 }`,
       cpp: `#include <iostream>
 using namespace std;
 
-// Write a function that returns 1 if n is prime, 0 otherwise
 int isPrime(int n) {
-  // your code here
 }`,
-      java: `import java.util.Scanner;\n\npublic class Main {
-    // Write a function that returns 1 if n is prime, 0 otherwise
+      java: `import java.util.Scanner;
+
+public class Main {
     public static int isPrime(int n) {
-        // your code here
+    }
+    
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        int n = sc.nextInt();
+        System.out.print(isPrime(n));
     }
 }`,
-      python: `# Write a function that returns 1 if n is prime, 0 otherwise
-def isPrime(n):
-    # your code here
-    pass`
+      python: `def isPrime(n):
+    pass
+
+if __name__ == "__main__":
+    n = int(input())
+    print(isPrime(n))`
     },
     supportedLanguages: ['c', 'cpp', 'java', 'python'],
     testCases: [
@@ -473,16 +519,13 @@ def isPrime(n):
 
 const seedDB = async () => {
   try {
-    // Connect to MongoDB
     const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/fix-solve';
     await mongoose.connect(mongoUri);
     console.log('Connected to MongoDB');
 
-    // Clear existing problems
     await Problem.deleteMany({});
     console.log('Cleared existing problems');
 
-    // Insert new problems
     await Problem.insertMany(problems);
     console.log('Seeded problems successfully');
 

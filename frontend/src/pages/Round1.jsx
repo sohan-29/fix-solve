@@ -2,8 +2,8 @@ import { useEffect, useState, useRef } from 'react';
 import axios from '../api';
 import { useNavigate } from 'react-router-dom';
 import useAntiCheat from '../hooks/useAntiCheat';
+import Editor from '@monaco-editor/react';
 
-// Language options with display names
 const LANGUAGES = [
   { id: 'c', name: 'C' },
   { id: 'cpp', name: 'C++' },
@@ -24,11 +24,10 @@ export default function Round1() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [solvedProblems, setSolvedProblems] = useState(new Set());
   const [totalMistakes, setTotalMistakes] = useState(0);
-  const [timerDuration, setTimerDuration] = useState(1800); // Default 30 min
+  const [timerDuration, setTimerDuration] = useState(1800);
   const [isLocked, setIsLocked] = useState(false);
   const [submissionResult, setSubmissionResult] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false); // Loading state for submission
-  const [resultRef, setResultRef] = useState(null); // Ref for auto-scroll
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   const userId = localStorage.getItem('userId');
   const { warnings, isLockedOut, MAX_WARNINGS } = useAntiCheat(userId);
@@ -36,42 +35,33 @@ export default function Round1() {
   const timerRef = useRef(null);
   const resultScrollRef = useRef(null);
 
-  // Format time as h:m:s (countdown style - shows remaining time)
   const formatTime = (seconds) => {
     const secs = Math.max(0, Math.floor(seconds));
     const hrs = Math.floor(secs / 3600);
     const mins = Math.floor((secs % 3600) / 60);
     const s = Math.floor(secs % 60);
-
     if (hrs > 0) {
       return `${hrs}:${mins.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     }
     return `${mins}:${s.toString().padStart(2, '0')}`;
   };
 
-  // Fetch timer from backend
   const fetchTimer = async () => {
     try {
-      const res = await axios.get(`/api/users/${userId}/timer?round=1`);
+      const res = await axios.get(`/users/${userId}/timer?round=1`);
       const { remaining, duration, timerStart } = res.data;
-      
       setTimerDuration(duration || 1800);
       setElapsedTime(remaining);
-      
-      // Save to sessionStorage for persistence across refreshes
       sessionStorage.setItem('round1Remaining', remaining.toString());
       sessionStorage.setItem('round1Duration', (duration || 1800).toString());
-      
       if (timerStart) {
         setStartTime(new Date(timerStart));
         sessionStorage.setItem('round1TimerStart', timerStart);
       }
-      
       timerFetchedRef.current = true;
       return res.data;
     } catch (err) {
       console.error('Error fetching timer:', err);
-      // Try to load from sessionStorage as fallback
       const savedRemaining = sessionStorage.getItem('round1Remaining');
       const savedDuration = sessionStorage.getItem('round1Duration');
       if (savedRemaining) {
@@ -85,16 +75,11 @@ export default function Round1() {
     }
   };
 
-  // Check lock status on mount - always fetch from server
   const checkLockStatus = async () => {
     try {
-      const res = await axios.get(`/api/users/${userId}`);
-      // Server has the latest lock status - use that directly
+      const res = await axios.get(`/users/${userId}`);
       setIsLocked(res.data.isLockedOut || false);
-      
-      // Also check if user is approved
       if (!res.data.isApproved && !res.data.isLockedOut) {
-        // User is not approved - redirect to instructions
         navigate('/instructions');
       }
     } catch (err) {
@@ -102,10 +87,9 @@ export default function Round1() {
     }
   };
 
-  // Fetch submitted code for a problem
   const fetchSubmittedCode = async (problemId) => {
     try {
-      const res = await axios.get(`/api/users/${userId}`);
+      const res = await axios.get(`/users/${userId}`);
       const userData = res.data;
       const submittedCodeMap = userData.round1SubmittedCode || {};
       return submittedCodeMap[problemId] || null;
@@ -115,19 +99,16 @@ export default function Round1() {
     }
   };
 
-  // Fetch problems with selected language
   const fetchProblems = async (language) => {
     try {
-      const res = await axios.get(`/api/problems/round/1?language=${language}`);
+      const res = await axios.get(`/problems/round/1?language=${language}`);
       const problemsData = res.data;
       const problemsArray = Array.isArray(problemsData) ? problemsData : [problemsData];
       setProblems(problemsArray);
-
       if (problemsArray.length > 0) {
         setProblem(problemsArray[0]);
-        // Try to load saved code first
         const savedCode = await fetchSubmittedCode(problemsArray[0]._id);
-setCode(savedCode || problemsArray[0].bugCode || problemsArray[0].starterCode || '');
+        setCode(savedCode || problemsArray[0].bugCode || problemsArray[0].starterCode || '');
       }
     } catch (err) {
       console.error('Error fetching problems:', err);
@@ -137,29 +118,29 @@ setCode(savedCode || problemsArray[0].bugCode || problemsArray[0].starterCode ||
     }
   };
 
-  // Initialize - fetch timer first, then problems
   useEffect(() => {
     const init = async () => {
-      // Check lock status from server
       await checkLockStatus();
+      if (sessionStorage.getItem('isLocked') === 'true') {
+        setIsLocked(true);
+      }
+      // First fetch timer to check if it already exists
+      const timerData = await fetchTimer();
       
-      // First, try to start timer if not started (for new users)
-      try {
-        await axios.post(`/api/users/${userId}/timer/start`, { round: 1, duration: 1800 });
-      } catch (err) {
-        // Timer might already be started, ignore error
+      // Only start timer if it doesn't already exist
+      if (!timerData || !timerData.timerStart) {
+        try {
+          await axios.post(`/users/${userId}/timer/start`, { round: 1, duration: 1800 });
+          // Fetch again after starting to get updated timer
+          await fetchTimer();
+        } catch (err) {
+          console.error('Error starting timer:', err);
+        }
       }
       
-      // Then fetch the timer
-      await fetchTimer();
-      
-      // Finally fetch problems
       await fetchProblems(selectedLanguage);
     };
-    
     init();
-
-    // Cleanup timer on unmount
     return () => {
       if (timerRef.current) {
         clearInterval(timerRef.current);
@@ -167,23 +148,17 @@ setCode(savedCode || problemsArray[0].bugCode || problemsArray[0].starterCode ||
     };
   }, []);
 
-  // Timer effect - uses backend-controlled timer (updates every second)
   useEffect(() => {
     if (!loading && timerFetchedRef.current) {
-      // Clear existing timer
       if (timerRef.current) {
         clearInterval(timerRef.current);
       }
-      
       timerRef.current = setInterval(() => {
-        axios.get(`/api/users/${userId}/timer?round=1`)
+        axios.get(`/users/${userId}/timer?round=1`)
           .then(res => {
             const { remaining, isExpired } = res.data;
             setElapsedTime(remaining);
-            
-            // Save to sessionStorage for persistence
             sessionStorage.setItem('round1Remaining', remaining.toString());
-            
             if (isExpired) {
               alert('Time is up! Round 1 has ended.');
               navigate('/round-complete', {
@@ -195,7 +170,6 @@ setCode(savedCode || problemsArray[0].bugCode || problemsArray[0].starterCode ||
             console.error('Error fetching timer:', err);
           });
       }, 1000);
-      
       return () => {
         if (timerRef.current) {
           clearInterval(timerRef.current);
@@ -204,22 +178,27 @@ setCode(savedCode || problemsArray[0].bugCode || problemsArray[0].starterCode ||
     }
   }, [loading, userId, timerDuration, navigate]);
 
-  // Auto-scroll to results when submissionResult changes
+  // Auto-scroll to results when they appear
   useEffect(() => {
     if (submissionResult && resultScrollRef.current) {
+      // First, show a visible notification
+      const resultsSection = document.getElementById('results-section');
+      if (resultsSection) {
+        resultsSection.classList.add('results-visible');
+      }
+      
+      // Then scroll to results
       setTimeout(() => {
         resultScrollRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
     }
   }, [submissionResult]);
 
-  // Handle problem selection - ensure proper state update
   const handleProblemSelect = async (index) => {
     const selectedProblem = problems[index];
     if (selectedProblem) {
       setSelectedProblemIndex(index);
       setProblem(selectedProblem);
-      // Try to load saved code first, then fall back to starter code
       const savedCode = await fetchSubmittedCode(selectedProblem._id);
       setCode(savedCode || selectedProblem.bugCode || selectedProblem.starterCode || '');
       setMistakes(0);
@@ -227,22 +206,16 @@ setCode(savedCode || problemsArray[0].bugCode || problemsArray[0].starterCode ||
     }
   };
 
-  // Handle language change - keep current problem but update code for new language
   const handleLanguageChange = async (e) => {
     const newLang = e.target.value;
     const currentProblemIndex = selectedProblemIndex;
     const currentProblem = problems[currentProblemIndex];
-    
     setSelectedLanguage(newLang);
-    
-    // Fetch problems for new language but keep current selection
     try {
-      const res = await axios.get(`/api/problems/round/1?language=${newLang}`);
+      const res = await axios.get(`/problems/round/1?language=${newLang}`);
       const problemsData = res.data;
       const problemsArray = Array.isArray(problemsData) ? problemsData : [problemsData];
       setProblems(problemsArray);
-
-      // Find the same problem in the new language by matching title
       const sameProblem = problemsArray.find(p => p.title === currentProblem?.title);
       if (sameProblem) {
         const newIndex = problemsArray.findIndex(p => p.title === currentProblem.title);
@@ -262,14 +235,11 @@ setCode(savedCode || problemsArray[0].bugCode || problemsArray[0].starterCode ||
     }
   };
 
-  // Allow copy/paste for user convenience
-  // Disable copy/paste - prevent cheating
   const disableCopyPaste = (e) => {
     e.preventDefault();
     alert('Copy/Paste is disabled during the contest!');
   };
-  
-  // Auto enter fullscreen on mount
+
   useEffect(() => {
     const enterFullscreen = () => {
       if (document.documentElement.requestFullscreen && !document.fullscreenElement) {
@@ -278,14 +248,10 @@ setCode(savedCode || problemsArray[0].bugCode || problemsArray[0].starterCode ||
         });
       }
     };
-    
-    // Enter fullscreen after a short delay to ensure page is loaded
     const timer = setTimeout(enterFullscreen, 1000);
-    
     return () => clearTimeout(timer);
   }, []);
 
-  // Toggle fullscreen
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen();
@@ -296,32 +262,26 @@ setCode(savedCode || problemsArray[0].bugCode || problemsArray[0].starterCode ||
     }
   };
 
-  // Handle Run (test code without submission)
   const handleRun = async () => {
     setIsSubmitting(true);
     setSubmissionResult(null);
     try {
-      const res = await axios.post('/api/submissions', {
+      const res = await axios.post('/submissions', {
         problemId: problem?._id || null,
         code,
         language: selectedLanguage,
         userId,
         round: 1,
-        isRun: true // Flag for Run mode - no negative marks
+        isRun: true
       });
-
       const result = res.data;
       console.log('Run result:', result);
-      
-      // For Run, check if visible tests passed
       const isVisiblePassed = result.result?.summary?.visiblePassed === true || result.visibleTestPassed === true;
       const status = isVisiblePassed ? 'Accepted' : 'Wrong Answer';
-
-      // Set submission result for UI display
       setSubmissionResult({
         ...result,
         status: status,
-        isRun: true, // Flag to indicate this is a Run result
+        isRun: true,
         result: result.result || {
           summary: {
             visiblePassed: isVisiblePassed,
@@ -354,38 +314,27 @@ setCode(savedCode || problemsArray[0].bugCode || problemsArray[0].starterCode ||
     try {
       const userId = localStorage.getItem('userId');
       const userName = localStorage.getItem('userName');
-
-      const res = await axios.post('/api/submissions', {
+      const res = await axios.post('/submissions', {
         problemId: problem?._id || null,
         code,
         language: selectedLanguage,
         userId,
         round: 1,
-        isRun: false // This is a real submission
+        isRun: false
       });
-
       const result = res.data;
       const status = result.result?.summary?.allPassed ? 'Accepted' : result.status;
-
-      // Set submission result for UI display
       setSubmissionResult(result);
-
       if (status === 'Accepted') {
-        // Mark this problem as solved
         const newSolvedProblems = new Set(solvedProblems);
         newSolvedProblems.add(problem._id);
         setSolvedProblems(newSolvedProblems);
-
-        // Check if all problems are solved
         const allSolved = problems.every(p => newSolvedProblems.has(p._id));
-
         if (allSolved) {
-          // All problems solved - go to round completion
           const elapsed = (Date.now() - startTime) / 1000;
           const penalty = totalMistakes * 5;
           const total = elapsed + penalty;
-          await axios.post('/api/contests/end', { name: userName, round: 1, timeTaken: total });
-
+          await axios.post('/contests/end', { name: userName, round: 1, timeTaken: total });
           navigate('/round-complete', {
             state: {
               timeTaken: elapsed,
@@ -395,8 +344,6 @@ setCode(savedCode || problemsArray[0].bugCode || problemsArray[0].starterCode ||
             }
           });
         } else {
-          // Show result then auto move to next problem after 2 seconds
-          // Find next unsolved problem
           const nextIndex = problems.findIndex(p => !newSolvedProblems.has(p._id));
           if (nextIndex !== -1) {
             setTimeout(() => {
@@ -405,11 +352,9 @@ setCode(savedCode || problemsArray[0].bugCode || problemsArray[0].starterCode ||
           }
         }
       } else {
-        // Wrong answer - keep the result visible for user to see and fix
         const newMistakes = mistakes + 1;
         setMistakes(newMistakes);
         setTotalMistakes(totalMistakes + 1);
-        // Don't clear submission result - user can see what went wrong
       }
     } catch (err) {
       console.error(err);
@@ -426,7 +371,6 @@ setCode(savedCode || problemsArray[0].bugCode || problemsArray[0].starterCode ||
     return <div className="container">Loading problem...</div>;
   }
 
-  // Redirect if locked out
   if (isLocked || isLockedOut) {
     return (
       <div className="lockout-overlay">
@@ -451,14 +395,12 @@ setCode(savedCode || problemsArray[0].bugCode || problemsArray[0].starterCode ||
         </button>
       </div>
 
-      {/* Anti-cheat warning banner */}
       {warnings > 0 && !isLockedOut && (
         <div className="warning-banner">
           ⚠️ Warning! Tab switch detected. If you switch again you will be <strong>locked out</strong>.
         </div>
       )}
 
-      {/* Problem Selector */}
       {problems.length > 1 && (
         <div className="problem-selector">
           <label htmlFor="problem-select">Select Problem: </label>
@@ -502,7 +444,6 @@ setCode(savedCode || problemsArray[0].bugCode || problemsArray[0].starterCode ||
           </div>
         )}
 
-        {/* Language Selector */}
         <div className="language-selector">
           <label htmlFor="language">Select Language: </label>
           <select
@@ -518,21 +459,26 @@ setCode(savedCode || problemsArray[0].bugCode || problemsArray[0].starterCode ||
           </select>
         </div>
 
-        <div className="code-editor-wrapper">
-          <textarea
-            className="code-textarea"
-            rows={15}
-            cols={60}
+        <div className="code-editor-wrapper" style={{ height: '500px', border: '1px solid #333' }}>
+          <Editor
+            height="100%"
+            language={selectedLanguage === 'c' ? 'cpp' : selectedLanguage}
             value={code}
-            onChange={e => setCode(e.target.value)}
-            onCopy={disableCopyPaste}
-            onCut={disableCopyPaste}
-            onPaste={disableCopyPaste}
-            draggable={false}
+            onChange={(value) => setCode(value || '')}
+            theme="vs-dark"
+            options={{
+              minimap: { enabled: false },
+              fontSize: 14,
+              scrollBeyondLastLine: false,
+              automaticLayout: true,
+              contextmenu: false,
+              readOnly: false,
+              padding: { top: 10, bottom: 10 },
+              fontFamily: "'Courier New', Courier, monospace",
+            }}
           />
         </div>
 
-        {/* Loading overlay */}
         {isSubmitting && (
           <div className="submission-loading">
             <div className="loading-spinner"></div>
@@ -552,7 +498,6 @@ setCode(savedCode || problemsArray[0].bugCode || problemsArray[0].starterCode ||
           </button>
         </div>
 
-        {/* Submission Result Display */}
         {submissionResult && (
           <div className="submission-result" ref={resultScrollRef}>
             <h4>
@@ -561,7 +506,7 @@ setCode(savedCode || problemsArray[0].bugCode || problemsArray[0].starterCode ||
             <div className={`result-status ${submissionResult.status === 'Accepted' ? 'success' : 'error'}`}>
               Status: {submissionResult.status}
             </div>
-            
+
             {submissionResult.result?.summary && (
               <div className="result-summary">
                 <p><strong>Marks:</strong> {submissionResult.marks || 0} / {submissionResult.result.summary.totalMarks || 10}</p>
@@ -571,7 +516,6 @@ setCode(savedCode || problemsArray[0].bugCode || problemsArray[0].starterCode ||
                   <p><strong>Hidden Tests:</strong> {submissionResult.result.summary.hiddenPassed ? '✓ Passed' : '✗ Failed'}</p>
                 )}
                 
-                {/* Only show negative marks for actual submissions, not for Run */}
                 {!submissionResult.isRun && submissionResult.negativeMarks > 0 && (
                   <p className="negative-marks"><strong>Negative Marks:</strong> -{submissionResult.negativeMarks}</p>
                 )}
@@ -584,7 +528,6 @@ setCode(savedCode || problemsArray[0].bugCode || problemsArray[0].starterCode ||
               </div>
             )}
 
-            {/* Show test case failures - Expected vs Got */}
             {submissionResult.result?.visible?.results && !submissionResult.result.summary.visiblePassed && (
               <div className="test-case-failures">
                 <h5>Test Case Failures:</h5>

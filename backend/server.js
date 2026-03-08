@@ -12,9 +12,9 @@ const app = express();
 app.set('trust proxy', true);
 app.use(express.json());
 
-// CORS configuration - allow all origins for LAN access
+// CORS configuration
 const corsOptions = {
-  origin: true,  // Allow all origins for LAN access
+  origin: true,
   credentials: true,
   optionsSuccessStatus: 200
 };
@@ -28,7 +28,7 @@ const connectDB = async () => {
   }
   try {
     await mongoose.connect(process.env.MONGO_URI);
-    console.log('MongoDB connected');
+    console.log('Connected to MongoDB');
   } catch (err) {
     console.error('MongoDB connection error:', err);
     process.exit(1);
@@ -41,8 +41,7 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Seed endpoint - POST to /api/seed to clear database
-// Use Admin panel to add problems
+// Seed endpoint
 app.post('/api/seed', async (req, res) => {
   try {
     await Problem.deleteMany({});

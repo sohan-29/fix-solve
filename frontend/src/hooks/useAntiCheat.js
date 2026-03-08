@@ -20,6 +20,28 @@ export default function useAntiCheat(userId) {
     const [isLockedOut, setIsLockedOut] = useState(false);
     const reportingRef = useRef(false); // guard against duplicate rapid-fire calls
 
+    // Check lock status on mount
+    useEffect(() => {
+        if (!userId) return;
+        
+        const checkLockStatus = async () => {
+            try {
+                const res = await axios.get(`/users/${userId}`);
+                if (res.data.isLockedOut) {
+                    setIsLockedOut(true);
+                    sessionStorage.setItem('isLocked', 'true');
+                }
+                if (res.data.tabSwitchCount) {
+                    setWarnings(res.data.tabSwitchCount);
+                }
+            } catch (err) {
+                console.error('Error checking lock status:', err);
+            }
+        };
+        
+        checkLockStatus();
+    }, [userId]);
+
     const reportViolation = useCallback(async () => {
         if (!userId || reportingRef.current) return;
         reportingRef.current = true;

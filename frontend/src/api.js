@@ -1,30 +1,36 @@
 import axios from 'axios';
 
 // Configure default base URL for backend APIs
-// The backend is running on port 3000 on the same machine/server
-
-// Check if we are accessing via localhost or a network IP
-const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-
-const getApiBaseUrl = () => {
-  // If running in development AND accessing via localhost, use proxy (relative URL)
-  if (import.meta.env.DEV && isLocalhost) {
-    return '';
-  }
-  // For network access in development, use proxy (relative URL works with Vite proxy)
-  if (import.meta.env.DEV) {
-    return '';  // Use Vite proxy for all dev access including network
-  }
-  // For production
-  if (import.meta.env.VITE_API_URL) {
-    return import.meta.env.VITE_API_URL;
-  }
-  // Default: use direct connection to backend on port 3000
-  return window.location.protocol + '//' + window.location.hostname + ':3000';
-};
+// Backend is running on port 3000
 
 const instance = axios.create({
-  baseURL: getApiBaseUrl(),
+  // Use proxy through Vite - this ensures requests go through the dev server proxy
+  baseURL: '/api',
+  timeout: 30000,
 });
+
+// Add request interceptor for debugging
+instance.interceptors.request.use(
+  (config) => {
+    console.log('API Request:', config.method?.toUpperCase(), config.baseURL + config.url);
+    return config;
+  },
+  (error) => {
+    console.error('API Request Error:', error);
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor for debugging
+instance.interceptors.response.use(
+  (response) => {
+    console.log('API Response:', response.status, response.config.url);
+    return response;
+  },
+  (error) => {
+    console.error('API Response Error:', error.response?.status, error.config?.url, error.message);
+    return Promise.reject(error);
+  }
+);
 
 export default instance;
