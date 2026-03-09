@@ -54,7 +54,7 @@ const createSubmission = async (req, res, next) => {
           if (elapsed >= duration) {
             return res.status(403).json({
               error: 'Time is up',
-              message: 'Your round timer has expired. Contact a coordinator if you believe this is an error.',
+              message: 'Your round timer has expired. Contact a coordinators if you believe this is an error.',
             });
           }
         }
@@ -76,20 +76,27 @@ const createSubmission = async (req, res, next) => {
     let problem = null;
     const problemMarks = 10; // Default marks
 
+    console.log('Submission received - problemId:', problemId, 'code length:', code?.length);
+
     if (problemId) {
       try {
         problem = await Problem.findById(problemId);
+        console.log('Problem found:', problem ? 'yes' : 'no', problem ? 'title: ' + problem.title : '');
         if (problem) {
           visibleTestCases = problem.testCases || [];
           hiddenTestCases = problem.hiddenTestCases || [];
+          console.log('Test cases found - visible:', visibleTestCases.length, 'hidden:', hiddenTestCases.length);
         }
       } catch (e) {
-        console.log('Problem not found, using default test case');
+        console.log('Problem not found, using default test case. Error:', e.message);
       }
+    } else {
+      console.log('No problemId provided');
     }
 
     // Default test case if none exist
     if (visibleTestCases.length === 0 && hiddenTestCases.length === 0) {
+      console.log('Using default test case');
       visibleTestCases = [{ input: '5\n3', output: '8' }];
     }
 
@@ -238,8 +245,9 @@ const createSubmission = async (req, res, next) => {
     const submission = await Submission.create(submissionData);
 
     // Return response with isRun flag so frontend knows not to show negative marks
+    // Use toJSON() to get clean JSON without Mongoose internals
     res.status(201).json({
-      ...submission,
+      ...submission.toJSON(),
       isRun: isRun,
       message: isRun ? 'Run completed successfully' : 'Submission recorded'
     });
@@ -280,4 +288,8 @@ const getProblemSubmissions = async (req, res, next) => {
   }
 };
 
-module.exports = { createSubmission, getUserSubmissions, getProblemSubmissions };
+module.exports = {
+  createSubmission,
+  getUserSubmissions,
+  getProblemSubmissions
+};

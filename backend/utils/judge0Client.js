@@ -45,7 +45,7 @@ const compareOutputs = (actual, expected) => {
   return false;
 };
 
-// Execute Python - uses spawnSync for reliable stdin handling
+// Execute Python locally
 const executePythonLocally = (sourceCode, stdin = '') => {
   const fs = require('fs');
   const path = require('path');
@@ -57,6 +57,7 @@ const executePythonLocally = (sourceCode, stdin = '') => {
     fs.mkdirSync(tmpDir, { recursive: true });
     const srcFile = path.join(tmpDir, 'main.py');
     
+    // Write the code directly - it already has main function
     fs.writeFileSync(srcFile, sourceCode);
     
     const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
@@ -99,6 +100,7 @@ const executeCLocally = (sourceCode, stdin = '', isCpp = false) => {
     const srcFile = path.join(tmpDir, `main.${ext}`);
     const outFile = path.join(tmpDir, 'main.exe');
     
+    // Write the code directly - it already has main function
     fs.writeFileSync(srcFile, sourceCode);
     
     const compileResult = spawnSync(compiler, [srcFile, '-o', outFile], {
@@ -140,6 +142,7 @@ const executeJavaLocally = (sourceCode, stdin = '') => {
   const path = require('path');
   
   try {
+    // The code already has the Main class with main method
     const classMatch = sourceCode.match(/public\s+class\s+(\w+)/);
     const className = classMatch ? classMatch[1] : 'Main';
     
@@ -182,7 +185,7 @@ const executeJavaLocally = (sourceCode, stdin = '') => {
   }
 };
 
-// Local execution - NOT async, uses synchronous spawnSync
+// Local execution - uses synchronous spawnSync
 const executeLocally = (sourceCode, language, stdin = '') => {
   switch (language.toLowerCase()) {
     case 'python':
@@ -267,19 +270,32 @@ const runAllTestCases = async (sourceCode, language, testCases) => {
   const results = [];
   let judge0Warning = null;
   
+  console.log('=== runAllTestCases START ===');
+  console.log('Language:', language, 'Test cases count:', testCases?.length);
+  
+  if (!testCases || !Array.isArray(testCases) || testCases.length === 0) {
+    console.log('No test cases provided - returning empty results');
+    return {
+      results: [],
+      summary: { total: 0, passed: 0, failed: 0, allPassed: false, judge0Warning: 'No test cases' }
+    };
+  }
+  
   const judge0Available = await isJudge0Available();
+  console.log('Judge0 available:', judge0Available);
   if (!judge0Available) {
     judge0Warning = 'Executed locally';
   }
   
   for (let index = 0; index < testCases.length; index++) {
     const testCase = testCases[index];
+    
     try {
       // Get the input - handle both string and object formats
       const input = typeof testCase === 'string' ? testCase : (testCase.input || '');
       const expectedOutput = typeof testCase === 'string' ? '' : (testCase.output || testCase.expected || '');
       
-      // Call synchronous executeLocally directly (not await)
+      // Execute the code locally
       const localResult = executeLocally(sourceCode, language, input);
       
       const actualOutput = localResult.stdout || '';
@@ -311,6 +327,9 @@ const runAllTestCases = async (sourceCode, language, testCases) => {
   
   const passedCount = results.filter(r => r.isPassed).length;
   const allPassed = passedCount === testCases.length;
+  
+  console.log('=== runAllTestCases END ===');
+  console.log('Summary:', { total: testCases.length, passed: passedCount, failed: testCases.length - passedCount, allPassed });
   
   return {
     results,
