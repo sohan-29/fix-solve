@@ -34,6 +34,7 @@ export default function Round1() {
   const timerFetchedRef = useRef(false);
   const timerRef = useRef(null);
   const resultScrollRef = useRef(null);
+  const editorRef = useRef(null);
 
   const formatTime = (seconds) => {
     const secs = Math.max(0, Math.floor(seconds));
@@ -126,7 +127,7 @@ export default function Round1() {
       }
       // First fetch timer to check if it already exists
       const timerData = await fetchTimer();
-      
+
       // Only start timer if it doesn't already exist
       if (!timerData || !timerData.timerStart) {
         try {
@@ -137,7 +138,7 @@ export default function Round1() {
           console.error('Error starting timer:', err);
         }
       }
-      
+
       await fetchProblems(selectedLanguage);
     };
     init();
@@ -186,7 +187,7 @@ export default function Round1() {
       if (resultsSection) {
         resultsSection.classList.add('results-visible');
       }
-      
+
       // Then scroll to results
       setTimeout(() => {
         resultScrollRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -238,6 +239,29 @@ export default function Round1() {
   const disableCopyPaste = (e) => {
     e.preventDefault();
     alert('Copy/Paste is disabled during the contest!');
+  };
+
+  const handleEditorMount = (editor, monaco) => {
+    editorRef.current = editor;
+
+    // Disable paste via Monaco's built-in actions
+    // Override the clipboard paste action with a no-op
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyV, () => {
+      alert('Pasting is disabled during the contest!');
+    });
+    // Also block Shift+Insert paste
+    editor.addCommand(monaco.KeyMod.Shift | monaco.KeyCode.Insert, () => {
+      alert('Pasting is disabled during the contest!');
+    });
+
+    // Intercept the paste event on the editor's textarea
+    const editorDomNode = editor.getDomNode();
+    if (editorDomNode) {
+      editorDomNode.addEventListener('paste', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
+    }
   };
 
   useEffect(() => {
@@ -298,9 +322,9 @@ export default function Round1() {
       });
     } catch (err) {
       console.error('Run error:', err);
-      setSubmissionResult({ 
-        error: 'Run failed', 
-        message: err.response?.data?.message || err.message, 
+      setSubmissionResult({
+        error: 'Run failed',
+        message: err.response?.data?.message || err.message,
         isRun: true,
         status: 'Error'
       });
@@ -465,6 +489,7 @@ export default function Round1() {
             language={selectedLanguage === 'c' ? 'cpp' : selectedLanguage}
             value={code}
             onChange={(value) => setCode(value || '')}
+            onMount={handleEditorMount}
             theme="vs-dark"
             options={{
               minimap: { enabled: false },
@@ -511,15 +536,15 @@ export default function Round1() {
               <div className="result-summary">
                 <p><strong>Marks:</strong> {submissionResult.marks || 0} / {submissionResult.result.summary.totalMarks || 10}</p>
                 <p><strong>Visible Tests:</strong> {submissionResult.result.summary.visiblePassed ? '✓ Passed' : '✗ Failed'}</p>
-                
+
                 {!submissionResult.isRun && (
                   <p><strong>Hidden Tests:</strong> {submissionResult.result.summary.hiddenPassed ? '✓ Passed' : '✗ Failed'}</p>
                 )}
-                
+
                 {!submissionResult.isRun && submissionResult.negativeMarks > 0 && (
                   <p className="negative-marks"><strong>Negative Marks:</strong> -{submissionResult.negativeMarks}</p>
                 )}
-                
+
                 {submissionResult.isRun && (
                   <p className="run-note" style={{ color: '#666', fontStyle: 'italic' }}>
                     Note: Run does not affect your score or negative marks.

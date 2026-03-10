@@ -23,7 +23,7 @@ export default function useAntiCheat(userId) {
     // Check lock status on mount
     useEffect(() => {
         if (!userId) return;
-        
+
         const checkLockStatus = async () => {
             try {
                 const res = await axios.get(`/users/${userId}`);
@@ -38,7 +38,7 @@ export default function useAntiCheat(userId) {
                 console.error('Error checking lock status:', err);
             }
         };
-        
+
         checkLockStatus();
     }, [userId]);
 
@@ -47,7 +47,7 @@ export default function useAntiCheat(userId) {
         reportingRef.current = true;
 
         try {
-            const res = await axios.post('/api/contests/report-violation', { userId });
+            const res = await axios.post('/contests/report-violation', { userId });
             const data = res.data;
             setWarnings(data.tabSwitchCount);
             if (data.isLockedOut) {
@@ -63,12 +63,12 @@ export default function useAntiCheat(userId) {
     useEffect(() => {
         if (!userId) return;
 
-    const handleVisibilityChange = () => {
+        const handleVisibilityChange = () => {
             // Only trigger when the page becomes hidden (user switched away)
             // Also check if we're on a contest page (not admin, home, instructions, results, etc.)
             const currentPath = window.location.pathname;
             const isContestPage = currentPath === '/round1' || currentPath === '/round2';
-            
+
             // Only report violation if on contest pages
             if (document.hidden && isContestPage) {
                 reportViolation();
