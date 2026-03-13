@@ -211,8 +211,12 @@ const createSubmission = async (req, res, next) => {
 
     // --- 10. Persist Submission ---
     // For Run submissions, don't save to database (or mark as isRun)
+    // Only include user if it's a valid ObjectId
+    const mongoose = require('mongoose');
+    const isValidObjectId = userIdResolved && userIdResolved !== 'anonymous' && mongoose.Types.ObjectId.isValid(userIdResolved);
+    
     const submissionData = {
-      user: userIdResolved,
+      ...(isValidObjectId ? { user: userIdResolved } : {}),
       problem: problemId,
       code,
       language: language || 'c',

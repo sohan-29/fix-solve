@@ -151,8 +151,7 @@ exports.endRound = async (req, res) => {
 /**
  * POST /api/contests/report-violation
  * Called by the frontend when a tab-switch is detected via the Page Visibility API.
- * 1st offence  → warning only (tabSwitchCount = 1).
- * 2nd offence  → auto-lockout (isLockedOut = true).
+ * Strict zero-tolerance: 1st offence → auto-lockout (isLockedOut = true).
  * Body: { userId }
  */
 exports.reportViolation = async (req, res) => {
@@ -175,7 +174,8 @@ exports.reportViolation = async (req, res) => {
 
     user.tabSwitchCount += 1;
 
-    if (user.tabSwitchCount >= 2) {
+    // Zero-tolerance policy: lock out immediately
+    if (user.tabSwitchCount >= 1) {
       user.isLockedOut = true;
     }
 
@@ -184,10 +184,7 @@ exports.reportViolation = async (req, res) => {
     res.json({
       tabSwitchCount: user.tabSwitchCount,
       isLockedOut: user.isLockedOut,
-      message:
-        user.isLockedOut
-          ? "You have been locked out for repeated tab switching."
-          : `Warning ${user.tabSwitchCount}/1 — Do not switch tabs again or you will be locked out.`,
+      message: "You have been locked out for switching tabs.",
     });
   } catch (err) {
     res.status(500).json({ error: "Failed to report violation", details: err.message });

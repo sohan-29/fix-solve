@@ -227,7 +227,7 @@ export default function Round2() {
 
   const disableCopyPaste = (e) => {
     e.preventDefault();
-    alert('Copy/Paste is disabled during the contest!');
+    alert('Copy/Paste/Cut is strictly disabled during the contest!');
   };
 
   useEffect(() => {
@@ -365,7 +365,12 @@ export default function Round2() {
   }
 
   return (
-    <div className="round-page" onContextMenu={disableCopyPaste}>
+    <div className="round-page" 
+      onContextMenu={disableCopyPaste}
+      onCopy={disableCopyPaste}
+      onCut={disableCopyPaste}
+      onPaste={disableCopyPaste}
+    >
       <div className="round-header">
         <h2>Round 2 - Solve the Problem</h2>
         <div className="timer">Time: {formatTime(elapsedTime)} | Mistakes: {totalMistakes} | Solved: {solvedProblems.size}/{problems.length}</div>

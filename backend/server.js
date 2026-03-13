@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require('cors');
@@ -6,7 +7,6 @@ const problemRoutes = require("./routes/problemRoutes");
 const userRoutes = require("./routes/userRoutes");
 const contestRoutes = require("./routes/contestRoutes");
 const Problem = require("./models/problem");
-require("dotenv").config();
 
 const app = express();
 app.set('trust proxy', true);
@@ -20,19 +20,23 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// MongoDB connection
+// MongoDB connection with retry
 const connectDB = async () => {
   if (!process.env.MONGO_URI) {
     console.error('MongoDB URI not set. Please define MONGO_URI in your environment or .env file.');
     return;
   }
-  try {
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log('Connected to MongoDB');
-  } catch (err) {
-    console.error('MongoDB connection error:', err);
-    process.exit(1);
-  }
+  const connect = async () => {
+    try {
+      await mongoose.connect(process.env.MONGO_URI);
+      console.log('Connected to MongoDB');
+    } catch (err) {
+      console.error('MongoDB connection error:', err.message);
+      console.log('Retrying in 5 seconds...');
+      setTimeout(connect, 5000);
+    }
+  };
+  connect();
 };
 connectDB();
 

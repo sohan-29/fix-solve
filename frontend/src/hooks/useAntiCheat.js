@@ -1,14 +1,13 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import axios from '../api';
 
-const MAX_WARNINGS = 1; // 1 warning, then lockout on repeat
+const MAX_WARNINGS = 0; // Zero tolerance, immediate lockout
 
 /**
  * useAntiCheat — Page Visibility API hook
  *
  * Detects when the participant switches away from the contest tab.
- * - 1st switch  → warning (banner shown).
- * - 2nd switch  → auto-lockout (overlay blocks the page).
+ * - 1st switch  → auto-lockout (overlay blocks the page).
  *
  * Each violation is reported to the backend so lockout is enforced server-side too.
  *

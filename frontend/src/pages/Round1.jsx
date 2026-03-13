@@ -238,7 +238,7 @@ export default function Round1() {
 
   const disableCopyPaste = (e) => {
     e.preventDefault();
-    alert('Copy/Paste is disabled during the contest!');
+    alert('Copy/Paste/Cut is strictly disabled during the contest!');
   };
 
   const handleEditorMount = (editor, monaco) => {
@@ -408,7 +408,12 @@ export default function Round1() {
   }
 
   return (
-    <div className="round-page" onContextMenu={disableCopyPaste}>
+    <div className="round-page" 
+      onContextMenu={disableCopyPaste}
+      onCopy={disableCopyPaste}
+      onCut={disableCopyPaste}
+      onPaste={disableCopyPaste}
+    >
       <div className="round-header">
         <h2>Round 1 - Debug the Code</h2>
         <div className="timer">

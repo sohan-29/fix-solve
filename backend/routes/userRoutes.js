@@ -15,6 +15,10 @@ const router = express.Router();
 
 router.post("/register", registerUser);
 router.get("/", getUsers);
+
+// Static routes MUST come before parameterized routes
+router.get("/pending-approvals", getPendingApprovals);
+
 router.get("/:id", getUserById);
 
 // Approval routes
@@ -22,7 +26,6 @@ router.post("/:id/request-approval", requestApproval);
 router.get("/:id/approval-status", checkApprovalStatus);
 router.post("/:id/approve", approveUser);
 router.post("/:id/unapprove", unapproveUser);
-router.get("/pending-approvals", getPendingApprovals);
 
 // Get timer status for a user (for backend-controlled timer)
 router.get("/:userId/timer", async (req, res) => {

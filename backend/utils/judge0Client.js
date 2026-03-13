@@ -1,5 +1,8 @@
 const axios = require('axios');
-const { spawn, spawnSync } = require('child_process');
+const { spawnSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
 
 const JUDGE0_URL = process.env.JUDGE0_URL || 'http://localhost:2358';
 
@@ -11,12 +14,15 @@ const LANGUAGE_IDS = {
   python: 71,
 };
 
-// Supported languages for local execution
-const LOCAL_LANGUAGES = ['python', 'c', 'cpp', 'java'];
+const SUPPORTED_LANGUAGES = ['python', 'c', 'cpp', 'java'];
+
+
 
 const getLanguageId = (language) => LANGUAGE_IDS[language.toLowerCase()] || null;
 
-const isLanguageSupported = (language) => LOCAL_LANGUAGES.includes(language.toLowerCase());
+const isLanguageSupported = (language) => SUPPORTED_LANGUAGES.includes(language.toLowerCase());
+
+
 
 // Normalize output for comparison
 const normalizeOutput = (output) => {
@@ -45,13 +51,44 @@ const compareOutputs = (actual, expected) => {
   return false;
 };
 
+// Wrap code for Judge0 based on language - minimal wrapping only if needed
+const wrapCode = (sourceCode, language) => {
+  const lang = language.toLowerCase();
+  if (lang === 'java') {
+    // If code already has a main method, just ensure class is named Main
+    if (sourceCode.includes('public static void main')) {
+      // Rename any public class to Main for Judge0/local exec compatibility
+      return sourceCode.replace(/public\s+class\s+\w+/, 'public class Main');
+    }
+    // Otherwise wrap in Main class
+    return `import java.util.*;
+public class Main {
+  public static void main(String[] args) {
+    Scanner sc = new Scanner(System.in);
+    ${sourceCode.trim()}
+  }
+}`;
+  } else if (lang === 'python') {
+    // Python needs no wrapping - return as-is
+    return sourceCode;
+  } else if (lang === 'c' || lang === 'cpp') {
+    if (sourceCode.includes('main(') || sourceCode.includes('main (')) {
+      return sourceCode;
+    }
+    return `${sourceCode}
+
+int main() {
+  return 0;
+}`;
+  }
+  return sourceCode;
+};
+
 // Execute Python locally
 const executePythonLocally = (sourceCode, stdin = '') => {
-  const fs = require('fs');
-  const path = require('path');
-  const os = require('os');
   
   const tmpDir = path.join(os.tmpdir(), `python_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+
   
   try {
     fs.mkdirSync(tmpDir, { recursive: true });
@@ -60,7 +97,26 @@ const executePythonLocally = (sourceCode, stdin = '') => {
     // Write the code directly - it already has main function
     fs.writeFileSync(srcFile, sourceCode);
     
-    const pythonCmd = process.platform === 'win32' ? 'python' : 'python3';
+// Find python executable
+let pythonCmd;
+if (process.platform === 'win32') {
+  const whereResult = spawnSync('where', ['python'], { shell: true });
+  if (whereResult.status === 0) {
+    const found = whereResult.stdout.toString().split('\n')[0].trim();
+    if (!found.includes('WindowsApps')) {
+      pythonCmd = found;
+    } else {
+      // Alias found, use real path
+      pythonCmd = 'C:\\Users\\' + require('os').userInfo().username + '\\AppData\\Local\\Programs\\Python\\Python311\\python.exe';
+    }
+  } else {
+    // Fallback to known path
+    pythonCmd = 'C:\\Users\\' + require('os').userInfo().username + '\\AppData\\Local\\Programs\\Python\\Python311\\python.exe';
+  }
+} else {
+  pythonCmd = 'python3';
+}
+
     
     // Prepare stdin - ensure it ends with newline
     let stdinData = stdin;
@@ -72,7 +128,8 @@ const executePythonLocally = (sourceCode, stdin = '') => {
       input: stdinData,
       timeout: 10000,
       encoding: 'utf-8',
-      maxBuffer: 10 * 1024 * 1024
+      maxBuffer: 1024 * 1024 * 10,
+      shell: true
     });
     
     return {
@@ -91,9 +148,7 @@ const executePythonLocally = (sourceCode, stdin = '') => {
 const executeCLocally = (sourceCode, stdin = '', isCpp = false) => {
   const ext = isCpp ? 'cpp' : 'c';
   const compiler = isCpp ? 'g++' : 'gcc';
-  const fs = require('fs');
-  const path = require('path');
-  const tmpDir = path.join(require('os').tmpdir(), `code_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  const tmpDir = path.join(os.tmpdir(), `code_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   
   try {
     fs.mkdirSync(tmpDir, { recursive: true });
@@ -105,7 +160,8 @@ const executeCLocally = (sourceCode, stdin = '', isCpp = false) => {
     
     const compileResult = spawnSync(compiler, [srcFile, '-o', outFile], {
       encoding: 'utf-8',
-      timeout: 15000
+      timeout: 15000,
+      shell: true
     });
     
     if (compileResult.status !== 0) {
@@ -121,7 +177,8 @@ const executeCLocally = (sourceCode, stdin = '', isCpp = false) => {
       input: stdinData,
       timeout: 10000,
       encoding: 'utf-8',
-      maxBuffer: 10 * 1024 * 1024
+      maxBuffer: 1024 * 1024 * 10,
+      shell: true
     });
     
     return {
@@ -132,29 +189,32 @@ const executeCLocally = (sourceCode, stdin = '', isCpp = false) => {
   } catch (error) {
     return { stdout: '', stderr: error.message, error };
   } finally {
-    try { require('fs').rmSync(tmpDir, { recursive: true, force: true }); } catch (e) {}
+    try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch (e) {}
   }
 };
 
 // Execute Java locally
 const executeJavaLocally = (sourceCode, stdin = '') => {
-  const fs = require('fs');
-  const path = require('path');
   
   try {
     // The code already has the Main class with main method
     const classMatch = sourceCode.match(/public\s+class\s+(\w+)/);
     const className = classMatch ? classMatch[1] : 'Main';
     
-    const tmpDir = path.join(require('os').tmpdir(), `java_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+    const tmpDir = path.join(os.tmpdir(), `java_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
     fs.mkdirSync(tmpDir, { recursive: true });
     
     fs.writeFileSync(path.join(tmpDir, `${className}.java`), sourceCode);
     
-    const compileResult = spawnSync('javac', [path.join(tmpDir, `${className}.java`)], {
+    // Simple execution relying on PATH (like C++ and Python)
+    const javacCmd = 'javac';
+    const javaCmd = 'java';
+    
+    const compileResult = spawnSync(javacCmd, [path.join(tmpDir, `${className}.java`)], {
       encoding: 'utf-8',
       timeout: 15000,
-      cwd: tmpDir
+      cwd: tmpDir,
+      shell: process.platform === 'win32' // Use shell on Windows for PATH resolution
     });
     
     if (compileResult.status !== 0) {
@@ -166,11 +226,12 @@ const executeJavaLocally = (sourceCode, stdin = '') => {
       stdinData = stdin + '\n';
     }
     
-    const runResult = spawnSync('java', ['-cp', tmpDir, className], {
+    const runResult = spawnSync(javaCmd, ['-cp', tmpDir, className], {
       input: stdinData,
       timeout: 10000,
       encoding: 'utf-8',
-      maxBuffer: 10 * 1024 * 1024
+      maxBuffer: 1024 * 1024 * 10,
+      shell: process.platform === 'win32'
     });
     
     return {
@@ -181,21 +242,22 @@ const executeJavaLocally = (sourceCode, stdin = '') => {
   } catch (error) {
     return { stdout: '', stderr: error.message, error };
   } finally {
-    try { require('fs').rmSync(tmpDir, { recursive: true, force: true }); } catch (e) {}
+    try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch (e) {}
   }
 };
 
 // Local execution - uses synchronous spawnSync
 const executeLocally = (sourceCode, language, stdin = '') => {
+  const wrappedCode = wrapCode(sourceCode, language);
   switch (language.toLowerCase()) {
     case 'python':
-      return executePythonLocally(sourceCode, stdin);
+      return executePythonLocally(wrappedCode, stdin);
     case 'c':
-      return executeCLocally(sourceCode, stdin, false);
+      return executeCLocally(wrappedCode, stdin, false);
     case 'cpp':
-      return executeCLocally(sourceCode, stdin, true);
+      return executeCLocally(wrappedCode, stdin, true);
     case 'java':
-      return executeJavaLocally(sourceCode, stdin);
+      return executeJavaLocally(wrappedCode, stdin);
     default:
       return { stdout: '', stderr: `Language ${language} not supported`, error: new Error('Unsupported language') };
   }
@@ -204,9 +266,10 @@ const executeLocally = (sourceCode, language, stdin = '') => {
 // Check if Judge0 is available
 const isJudge0Available = async () => {
   try {
-    await axios.get(`${JUDGE0_URL}/languages`, { timeout: 2000 });
+    await axios.get(`${JUDGE0_URL}/languages`, { timeout: 5000 });
     return true;
   } catch (error) {
+    console.log('Judge0 not available:', error.message);
     return false;
   }
 };
@@ -224,112 +287,83 @@ const submitCode = async (sourceCode, language, stdin = '') => {
   }
   
   const languageId = getLanguageId(language);
-  const judge0Available = await isJudge0Available();
-  
-  if (!judge0Available || !languageId) {
-    const localResult = executeLocally(sourceCode, language, stdin);
-    
+  if (!languageId) {
     return {
-      status: { 
-        id: localResult.error ? 6 : 3,
-        description: localResult.error ? 'Runtime Error' : 'Accepted' 
-      },
-      stdout: localResult.stdout,
-      stderr: localResult.stderr,
+      status: { id: 6, description: 'Language Not Supported' },
+      stdout: '',
+      stderr: `Language ${language} not supported by Judge0`,
       compile_output: '',
-      message: localResult.error ? `Error: ${localResult.stderr}` : 'Executed locally'
+      message: 'Language not supported by Judge0'
     };
   }
   
   try {
-    const response = await axios.post(`${JUDGE0_URL}/submissions?base64_encoded=false&wait=true`, {
-      source_code: sourceCode,
+    const wrappedCode = wrapCode(sourceCode, language);
+    const response = await axios.post(`${JUDGE0_URL}/submissions?base64_encoded=false&wait=true&cpu_time_limit=5&memory_limit=128000&cpu_cores=1`, {
+      source_code: wrappedCode,
       language_id: languageId,
       stdin
     }, { timeout: 30000 });
     
+    console.log('Judge0 response:', JSON.stringify(response.data, null, 2));
     return response.data;
   } catch (error) {
-    const localResult = executeLocally(sourceCode, language, stdin);
-    
+    console.error('Judge0 error:', error.message);
     return {
       status: { 
-        id: localResult.error ? 6 : 3,
-        description: localResult.error ? 'Runtime Error' : 'Accepted' 
+        id: 13,
+        description: 'Judge0 Service Unavailable' 
       },
-      stdout: localResult.stdout,
-      stderr: localResult.stderr,
+      stdout: '',
+      stderr: error.message,
       compile_output: '',
-      message: localResult.error ? `Error: ${localResult.stderr}` : 'Executed locally (Judge0 unavailable)'
+      message: 'Judge0 service unavailable - check docker-compose'
     };
   }
 };
 
-// Run all test cases
+
+// Run all test cases - Judge0 first, local fallback
 const runAllTestCases = async (sourceCode, language, testCases) => {
   const results = [];
-  let judge0Warning = null;
   
-  console.log('=== runAllTestCases START ===');
-  console.log('Language:', language, 'Test cases count:', testCases?.length);
-  
-  if (!testCases || !Array.isArray(testCases) || testCases.length === 0) {
-    console.log('No test cases provided - returning empty results');
-    return {
-      results: [],
-      summary: { total: 0, passed: 0, failed: 0, allPassed: false, judge0Warning: 'No test cases' }
-    };
+  if (!testCases?.length) {
+    return { results: [], summary: { total: 0, passed: 0, failed: 0, allPassed: false } };
   }
   
   const judge0Available = await isJudge0Available();
-  console.log('Judge0 available:', judge0Available);
-  if (!judge0Available) {
-    judge0Warning = 'Executed locally';
-  }
+  console.log(`Judge0 ${judge0Available ? 'available' : 'unavailable'}`);
   
-  for (let index = 0; index < testCases.length; index++) {
-    const testCase = testCases[index];
+  for (let i = 0; i < testCases.length; i++) {
+    const testCase = testCases[i];
+    const input = typeof testCase === 'string' ? testCase : (testCase.input || '');
+    const expected = typeof testCase === 'string' ? '' : (testCase.output || testCase.expected || '');
     
-    try {
-      // Get the input - handle both string and object formats
-      const input = typeof testCase === 'string' ? testCase : (testCase.input || '');
-      const expectedOutput = typeof testCase === 'string' ? '' : (testCase.output || testCase.expected || '');
-      
-      // Execute the code locally
-      const localResult = executeLocally(sourceCode, language, input);
-      
-      const actualOutput = localResult.stdout || '';
-      const expected = expectedOutput || '';
-      
-      const isPassed = compareOutputs(actualOutput, expected);
-      
-      results.push({
-        testCaseNumber: index + 1,
-        input: input,
-        expectedOutput: normalizeOutput(expected),
-        actualOutput: normalizeOutput(actualOutput),
-        status: localResult.error ? 'Runtime Error' : (isPassed ? 'Accepted' : 'Wrong Answer'),
-        isPassed: isPassed,
-        compile_output: localResult.stderr || ''
-      });
-    } catch (error) {
-      results.push({
-        testCaseNumber: index + 1,
-        input: typeof testCase === 'string' ? testCase : (testCase.input || ''),
-        expectedOutput: normalizeOutput(typeof testCase === 'string' ? '' : (testCase.output || testCase.expected || '')),
-        actualOutput: `Error: ${error.message}`,
-        status: 'Runtime Error',
-        isPassed: false,
-        compile_output: error.message
-      });
+    let executionResult;
+    
+    if (judge0Available) {
+      executionResult = await submitCode(sourceCode, language, input);
+    } else {
+      executionResult = executeLocally(sourceCode, language, input);
+      executionResult.status = { id: executionResult.error ? 11 : 3, description: executionResult.error ? 'Runtime Error' : 'Accepted' };
+      executionResult.time = 'local';
+      executionResult.memory = 'local';
     }
+    
+    const actual = executionResult.stdout || '';
+    const passed = compareOutputs(actual, expected);
+    
+    results.push({
+      testCaseNumber: i + 1,
+      input,
+      expectedOutput: normalizeOutput(expected),
+      actualOutput: normalizeOutput(actual),
+      status: executionResult.status?.description || 'Error',
+      isPassed: passed
+    });
   }
   
   const passedCount = results.filter(r => r.isPassed).length;
-  const allPassed = passedCount === testCases.length;
-  
-  console.log('=== runAllTestCases END ===');
-  console.log('Summary:', { total: testCases.length, passed: passedCount, failed: testCases.length - passedCount, allPassed });
   
   return {
     results,
@@ -337,8 +371,7 @@ const runAllTestCases = async (sourceCode, language, testCases) => {
       total: testCases.length,
       passed: passedCount,
       failed: testCases.length - passedCount,
-      allPassed,
-      judge0Warning
+      allPassed: passedCount === testCases.length
     }
   };
 };
@@ -360,10 +393,10 @@ module.exports = {
   submitCode, 
   runAllTestCases, 
   submitAndValidate,
+  executeLocally,
   getLanguageId,
   LANGUAGE_IDS,
-  isJudge0Available,
-  isLanguageSupported,
   normalizeOutput,
   compareOutputs
 };
+

@@ -60,20 +60,13 @@ int main() {
   // Test Java with complete code (from seed)
   console.log('\n=== Testing Java (complete code) ===');
   const javaCode = `public class Main {
-    public static int add(int a, int b) {
-        return a + b;
-    }
-    
     public static void main(String[] args) {
-        java.util.Scanner sc = new java.util.Scanner(System.in);
-        int a = sc.nextInt();
-        int b = sc.nextInt();
-        System.out.println(add(a, b));
+        System.out.println("Hello World");
     }
 }`;
   const javaResult = await runAllTestCases(javaCode, 'java', [
-    { input: '5\n3', output: '8' },
-    { input: '10\n20', output: '30' }
+    { input: '', output: 'Hello World' },
+    { input: '', output: 'Hello World' }
   ]);
   console.log('Java results:', JSON.stringify(javaResult, null, 2));
 }

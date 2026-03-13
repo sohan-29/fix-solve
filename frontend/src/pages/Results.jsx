@@ -7,7 +7,7 @@ export default function Results() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    axios.get('/api/users')
+    axios.get('/users')
       .then(res => {
         // Sort by: Marks (higher is better) → Time (lower is better) → Optimal Points (higher is better)
         const sortedUsers = res.data.sort((a, b) => {

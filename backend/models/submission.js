@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const submissionSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   problem: { type: mongoose.Schema.Types.ObjectId, ref: 'Problem' },
   code: { type: String, required: true },
   language: { type: String, required: true },
@@ -19,6 +19,8 @@ const submissionSchema = new mongoose.Schema({
   // Optimal code bonus (+1 for best time complexity)
   isOptimal: { type: Boolean, default: false },
   optimalBonus: { type: Number, default: 0 },
+  // Whether this was a "Run" (test only) vs actual submission
+  isRun: { type: Boolean, default: false },
   // Result details from Judge0
   result: { type: Object },
 }, { timestamps: true });
