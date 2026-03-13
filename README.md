@@ -13,12 +13,12 @@ A real-time online coding contest platform supporting multiple participants with
 
 ## Supported Languages
 
-- Python (primary)
-- C
-- C++
-- Java
+- **C**
+- **C++**
+- **Java**
+- **Python**
 
-JavaScript support has been removed for security and performance reasons.
+All 4 languages are fully supported with localized code execution capabilities. JavaScript support has been disabled.
 
 ## Architecture
 
@@ -123,12 +123,13 @@ The system uses SRS (Score based on Time Decay):
 - Penalty per wrong attempt: 10 points
 - Minimum score: 30% of P
 
-## Anti-Cheat Features
+## Anti-Cheat Features (Strict / Zero-Tolerance)
 
-1. **Tab Switch Detection**: Monitors browser visibility API
-2. **Timer Validation**: Server-side timers cannot be manipulated
-3. **IP Tracking**: Tracks submissions by IP
-4. **Session Lock**: Users can be locked out after violations
+1. **Zero-Tolerance Tab Switch Detection**: Monitors browser visibility API. A single tab switch results in immediate, permanent lockout from the contest.
+2. **Clipboard Disabled**: Copy, cut, and paste operations are strictly disabled on the code editor and entire page.
+3. **Timer Validation**: Server-side timers cannot be manipulated.
+4. **IP Tracking**: Tracks submissions by IP.
+5. **Session Lock**: Users locked out cannot bypass without Administrator approval.
 
 ## Project Structure
 
