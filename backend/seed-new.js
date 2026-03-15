@@ -1051,6 +1051,256 @@ if __name__ == "__main__":
     timeLimit: 60,
     difficulty: 'Medium',
     complexity: 'O(n)'
+  },
+
+  // ===== ROUND 2 — CODING PROBLEMS =====
+
+  // Q11: Single Number
+  {
+    title: 'Single Number',
+    description: 'Given a non-empty array of integers nums, every element appears twice except for one. Find that single one.\n\nYou must implement a solution with a linear runtime complexity and use only constant extra space.',
+    roundType: 2,
+    inputFormat: 'First line: integer n (size of array)\nSecond line: n space-separated integers',
+    outputFormat: 'The single integer that appears only once',
+    constraints: '1 <= n <= 3 * 10^4\n-3 * 10^4 <= nums[i] <= 3 * 10^4\nEach element in the array appears twice except for one element which appears only once.',
+    sampleInput: '3\n2 2 1',
+    sampleOutput: '1',
+    starterCodeByLanguage: {
+      c: `#include <stdio.h>
+
+int singleNumber(int arr[], int n) {
+    // your code here
+}
+
+int main() {
+    int n;
+    scanf("%d", &n);
+    int arr[n];
+    for (int i = 0; i < n; i++) scanf("%d", &arr[i]);
+    printf("%d", singleNumber(arr, n));
+    return 0;
+}`,
+      cpp: `#include <iostream>
+using namespace std;
+
+int singleNumber(int arr[], int n) {
+    // your code here
+}
+
+int main() {
+    int n;
+    cin >> n;
+    int arr[n];
+    for (int i = 0; i < n; i++) cin >> arr[i];
+    cout << singleNumber(arr, n);
+    return 0;
+}`,
+      java: `import java.util.Scanner;
+
+public class Main {
+    public static int singleNumber(int[] nums) {
+        // your code here
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        int n = sc.nextInt();
+        int[] arr = new int[n];
+        for (int i = 0; i < n; i++) arr[i] = sc.nextInt();
+        System.out.println(singleNumber(arr));
+    }
+}`,
+      python: `def singleNumber(nums):
+    # your code here
+    pass
+
+if __name__ == "__main__":
+    n = int(input().strip())
+    arr = list(map(int, input().strip().split()))
+    print(singleNumber(arr))`
+    },
+    supportedLanguages: ['c', 'cpp', 'java', 'python'],
+    testCases: [
+      { input: '3\n2 2 1', output: '1' },
+      { input: '5\n4 1 2 1 2', output: '4' }
+    ],
+    hiddenTestCases: [
+      { input: '1\n1', output: '1' },
+      { input: '7\n9 3 9 5 3 2 5', output: '2' },
+      { input: '5\n-1 -1 -2 -2 -3', output: '-3' }
+    ],
+    timeLimit: 120,
+    difficulty: 'Easy',
+    complexity: 'O(n)'
+  },
+
+  // Q12: Roman to Integer
+  {
+    title: 'Roman to Integer',
+    description: 'Roman numerals are represented by seven different symbols: I, V, X, L, C, D and M.\n\nGiven a roman numeral, convert it to an integer.',
+    roundType: 2,
+    inputFormat: 'A string s representing a valid roman numeral',
+    outputFormat: 'The integer value of the roman numeral',
+    constraints: '1 <= s.length <= 15\ns contains only the characters (\'I\', \'V\', \'X\', \'L\', \'C\', \'D\', \'M\').\nIt is guaranteed that s is a valid roman numeral in the range [1, 3999].',
+    sampleInput: 'III',
+    sampleOutput: '3',
+    starterCodeByLanguage: {
+      c: `#include <stdio.h>
+#include <string.h>
+
+int romanToInt(char *s) {
+    // your code here
+}
+
+int main() {
+    char s[16];
+    scanf("%15s", s);
+    printf("%d", romanToInt(s));
+    return 0;
+}`,
+      cpp: `#include <iostream>
+#include <string>
+using namespace std;
+
+int romanToInt(string s) {
+    // your code here
+}
+
+int main() {
+    string s;
+    cin >> s;
+    cout << romanToInt(s);
+    return 0;
+}`,
+      java: `import java.util.Scanner;
+
+public class Main {
+    public static int romanToInt(String s) {
+        // your code here
+        return 0;
+    }
+
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        String s = sc.next();
+        System.out.println(romanToInt(s));
+    }
+}`,
+      python: `def romanToInt(s):
+    # your code here
+    pass
+
+if __name__ == "__main__":
+    s = input().strip()
+    print(romanToInt(s))`
+    },
+    supportedLanguages: ['c', 'cpp', 'java', 'python'],
+    testCases: [
+      { input: 'III', output: '3' },
+      { input: 'LVIII', output: '58' }
+    ],
+    hiddenTestCases: [
+      { input: 'MCMXCIV', output: '1994' },
+      { input: 'IX', output: '9' },
+      { input: 'CDXLIV', output: '444' }
+    ],
+    timeLimit: 120,
+    difficulty: 'Easy',
+    complexity: 'O(n)'
+  },
+
+  // Q13: Decode Ways
+  {
+    title: 'Decode Ways',
+    description: 'A message containing letters from A-Z can be encoded into numbers using the following mapping:\n"1" -> \'A\'\n"2" -> \'B\'\n...\n"26" -> \'Z\'\n\nGiven a string s containing only digits, return the number of ways to decode it.',
+    roundType: 2,
+    inputFormat: 'A string s containing only digits',
+    outputFormat: 'The number of ways to decode it',
+    constraints: '1 <= s.length <= 100\ns contains only digits and may contain leading zeros.\nThe answer is guaranteed to fit in a 32-bit integer.',
+    sampleInput: '12',
+    sampleOutput: '2',
+    starterCodeByLanguage: {
+      c: `#include <stdio.h>\n#include <string.h>\n\nint numDecodings(char *s) {\n    // your code here\n}\n\nint main() {\n    char s[105];\n    scanf("%100s", s);\n    printf("%d", numDecodings(s));\n    return 0;\n}`,
+      cpp: `#include <iostream>\n#include <string>\nusing namespace std;\n\nint numDecodings(string s) {\n    // your code here\n}\n\nint main() {\n    string s;\n    cin >> s;\n    cout << numDecodings(s);\n    return 0;\n}`,
+      java: `import java.util.Scanner;\n\npublic class Main {\n    public static int numDecodings(String s) {\n        // your code here\n        return 0;\n    }\n\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        String s = sc.next();\n        System.out.println(numDecodings(s));\n    }\n}`,
+      python: `def numDecodings(s):\n    # your code here\n    pass\n\nif __name__ == "__main__":\n    s = input().strip()\n    print(numDecodings(s))`
+    },
+    supportedLanguages: ['c', 'cpp', 'java', 'python'],
+    testCases: [
+      { input: '12', output: '2' },
+      { input: '226', output: '3' }
+    ],
+    hiddenTestCases: [
+      { input: '06', output: '0' },
+      { input: '10', output: '1' },
+      { input: '2101', output: '1' }
+    ],
+    timeLimit: 120,
+    difficulty: 'Medium',
+    complexity: 'O(n)'
+  },
+
+  // Q14: House Robber II
+  {
+    title: 'House Robber II',
+    description: 'You are a professional robber planning to rob houses along a street. Each house has a certain amount of money stashed. All houses at this place are arranged in a circle. That means the first house is the neighbor of the last one. Meanwhile, adjacent houses have a security system connected, and it will automatically contact the police if two adjacent houses were broken into on the same night.\n\nGiven an integer array nums representing the amount of money of each house, return the maximum amount of money you can rob tonight without alerting the police.',
+    roundType: 2,
+    inputFormat: 'First line: integer n (number of houses)\nSecond line: n space-separated integers',
+    outputFormat: 'The maximum amount of money you can rob',
+    constraints: '1 <= nums.length <= 100\n0 <= nums[i] <= 1000',
+    sampleInput: '4\n2 1 4 9',
+    sampleOutput: '10',
+    starterCodeByLanguage: {
+      c: `#include <stdio.h>\n\nint rob(int arr[], int n) {\n    // your code here\n}\n\nint main() {\n    int n;\n    scanf("%d", &n);\n    int arr[n];\n    for (int i = 0; i < n; i++) scanf("%d", &arr[i]);\n    printf("%d", rob(arr, n));\n    return 0;\n}`,
+      cpp: `#include <iostream>\nusing namespace std;\n\nint rob(int arr[], int n) {\n    // your code here\n}\n\nint main() {\n    int n;\n    cin >> n;\n    int arr[n];\n    for (int i = 0; i < n; i++) cin >> arr[i];\n    cout << rob(arr, n);\n    return 0;\n}`,
+      java: `import java.util.Scanner;\n\npublic class Main {\n    public static int rob(int[] nums) {\n        // your code here\n        return 0;\n    }\n\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        int[] arr = new int[n];\n        for (int i = 0; i < n; i++) arr[i] = sc.nextInt();\n        System.out.println(rob(arr));\n    }\n}`,
+      python: `def rob(nums):\n    # your code here\n    pass\n\nif __name__ == "__main__":\n    n = int(input().strip())\n    arr = list(map(int, input().strip().split()))\n    print(rob(arr))`
+    },
+    supportedLanguages: ['c', 'cpp', 'java', 'python'],
+    testCases: [
+      { input: '4\n2 1 4 9', output: '10' },
+      { input: '3\n2 3 2', output: '3' }
+    ],
+    hiddenTestCases: [
+      { input: '1\n5', output: '5' },
+      { input: '5\n1 2 3 1 5', output: '8' },
+      { input: '4\n1 2 3 1', output: '4' }
+    ],
+    timeLimit: 120,
+    difficulty: 'Medium',
+    complexity: 'O(n)'
+  },
+
+  // Q15: Power of Two
+  {
+    title: 'Power of Two',
+    description: 'Given an integer n, return true if it is a power of two. Otherwise, return false.\nAn integer n is a power of two, if there exists an integer x such that n == 2^x.',
+    roundType: 2,
+    inputFormat: 'A single integer n',
+    outputFormat: 'true or false',
+    constraints: '-2^31 <= n <= 2^31 - 1',
+    sampleInput: '16',
+    sampleOutput: 'true',
+    starterCodeByLanguage: {
+      c: `#include <stdio.h>\n#include <stdbool.h>\n\nbool isPowerOfTwo(int n) {\n    // your code here\n}\n\nint main() {\n    int n;\n    scanf("%d", &n);\n    printf(isPowerOfTwo(n) ? "true" : "false");\n    return 0;\n}`,
+      cpp: `#include <iostream>\nusing namespace std;\n\nbool isPowerOfTwo(int n) {\n    // your code here\n}\n\nint main() {\n    int n;\n    cin >> n;\n    cout << (isPowerOfTwo(n) ? "true" : "false");\n    return 0;\n}`,
+      java: `import java.util.Scanner;\n\npublic class Main {\n    public static boolean isPowerOfTwo(int n) {\n        // your code here\n        return false;\n    }\n\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        int n = sc.nextInt();\n        System.out.println(isPowerOfTwo(n) ? "true" : "false");\n    }\n}`,
+      python: `def isPowerOfTwo(n):\n    # your code here\n    pass\n\nif __name__ == "__main__":\n    n = int(input().strip())\n    print("true" if isPowerOfTwo(n) else "false")`
+    },
+    supportedLanguages: ['c', 'cpp', 'java', 'python'],
+    testCases: [
+      { input: '1', output: 'true' },
+      { input: '16', output: 'true' }
+    ],
+    hiddenTestCases: [
+      { input: '3', output: 'false' },
+      { input: '-16', output: 'false' },
+      { input: '1024', output: 'true' }
+    ],
+    timeLimit: 120,
+    difficulty: 'Easy',
+    complexity: 'O(1)'
   }
 ];
 

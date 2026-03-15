@@ -1,343 +1,161 @@
-question1 = `
-#include <stdio.h>
-int main() {
-char arr[5] = "Hello"; // BUG: needs 6 (5 chars + '\0')
-printf("%s\n", arr);
-}
-correct version:
-`;
+// round2 question, coding question
 
-question2 = `QUESTION TWO:
-C
-#include <stdio.h>
-int main() {
-int x = 2147483647; // max int
-printf("%d\n", x+1); // BUG: overflow
-}
-`
-question3 = `#include <stdio.h>
-#include <pthread.h>
+question11 = `
+1.ONLY SINGLE NUMBER IN AN ARRAY 
 
-pthread_mutex_t lock1 = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t lock2 = PTHREAD_MUTEX_INITIALIZER;
+Given a non-empty array of integers nums, every element appears twice except for one. Find that single one.
 
-void* task1(void* arg) {
-    pthread_mutex_lock(&lock1);
-    printf("Task1 locked lock1\n");
+You must implement a solution with a linear runtime complexity and use only constant extra space.
 
-    pthread_mutex_lock(&lock2);   // may cause deadlock
-    printf("Task1 locked lock2\n");
-
-    pthread_mutex_unlock(&lock2);
-    pthread_mutex_unlock(&lock1);
-
-    return NULL;
-}
-
-void* task2(void* arg) {
-    pthread_mutex_lock(&lock2);
-    printf("Task2 locked lock2\n");
-
-    pthread_mutex_lock(&lock1);   // opposite order → deadlock
-    printf("Task2 locked lock1\n");
-
-    pthread_mutex_unlock(&lock1);
-    pthread_mutex_unlock(&lock2);
-
-    return NULL;
-}
-
-int main() {
-    pthread_t t1, t2;
-
-    pthread_create(&t1, NULL, task1, NULL);
-    pthread_create(&t2, NULL, task2, NULL);
-
-    pthread_join(t1, NULL);
-    pthread_join(t2, NULL);
-
-    return 0;
-}`
-
-question4 = `Description: Write a function to check if a string is a palindrome, considering only alphanumeric characters and ignoring cases.
-C:
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
-#include <stdbool.h>
-bool isPalindrome(char *s) {
-    int left = 0;
-    int right = strlen(s) - 1;
-    while(left < right) {
-        while(!isalnum(s[left])) left++;
-        while(!isalnum(s[right])) right--;
  
-        if(tolower(s[left]) != tolower(s[right]))
-            return false;
-        
-        left++;
-        right--;
-    }
-    return true;
-}
+
+Example 1:
+
+Input: nums = [2,2,1]
+
+Output: 1
+
+Example 2:
+
+Input: nums = [4,1,2,1,2]
+
+Output: 4
+
+Example 3:
+
+Input: nums = [1]
+
+Output: 1
+
+ 
+
+Constraints:
+
+1 <= nums.length <= 3 * 104
+-3 * 104 <= nums[i] <= 3 * 104
+Each element in the array appears twice except for one element which appears only once.
 `;
 
-question5 = `
-Complete the insertion sort function in such a way that they produce ascending order of elements
-C:
-#include <stdio.h>
+question12 = `
+.ROMAN TO INTEGER
 
-void insertionSort(int arr[], int n){
-    for(int i=1;i<n;i++){
-        int key=arr[i];
-        int j=i-1;
+Roman numerals are represented by seven different symbols: I, V, X, L, C, D and M.
 
-        while(arr[j] > key){   // ❌ Missing j >= 0 check
-            arr[j+1]=arr[j];
-            j--;
-        }
+Symbol       Value
+I             1
+V             5
+X             10
+L             50
+C             100
+D             500
+M             1000
+For example, 2 is written as II in Roman numeral, just two ones added together. 12 is written as XII, which is simply X + II. The number 27 is written as XXVII, which is XX + V + II.
 
-        arr[j+1]=key;
-    }
-}
+Roman numerals are usually written largest to smallest from left to right. However, the numeral for four is not IIII. Instead, the number four is written as IV. Because the one is before the five we subtract it making four. The same principle applies to the number nine, which is written as IX. There are six instances where subtraction is used:
 
-int main(){
-    int arr[]={5,2,4,6,1,3};
-    int n=6;
+I can be placed before V (5) and X (10) to make 4 and 9. 
+X can be placed before L (50) and C (100) to make 40 and 90. 
+C can be placed before D (500) and M (1000) to make 400 and 900.
+Given a roman numeral, convert it to an integer.
 
-    insertionSort(arr,n);
+ 
 
-    for(int i=0;i<n;i++)
-        printf("%d ",arr[i]);
-}
+Example 1:
+
+Input: s = "III"
+Output: 3
+Explanation: III = 3.
+Example 2:
+
+Input: s = "LVIII"
+Output: 58
+Explanation: L = 50, V= 5, III = 3.
+Example 3:
+
+Input: s = "MCMXCIV"
+Output: 1994
+Explanation: M = 1000, CM = 900, XC = 90 and IV = 4.
+ 
+
+Constraints:
+
+1 <= s.length <= 15
+s contains only the characters ('I', 'V', 'X', 'L', 'C', 'D', 'M').
+It is guaranteed that s is a valid roman numeral in the range [1, 3999].
 `;
 
-question6 = `VALID ANAGRAM
-C:
-#include <stdio.h>
-#include <string.h>
-#include <stdbool.h>
+question13 = `
+You have intercepted a secret message encoded as a string of numbers. The message is decoded via the following mapping:
 
-bool isAnagram(char *s, char *t) {
-    if(strlen(s) != strlen(t)) return false;
-    
-    int count[26] = {0};
-    
-    for(int i = 0; i < strlen(s); i++) {
-        count[s[i] - 'a']++;
-    }
-    
-    for(int i = 0; i < strlen(t); i++) {
-        count[t[i] - 'a']--;
-    }
-    
-    for(int i = 0; i < 26; i++) {
-        if(count[i] != 0) return false;
-    }
-    
-    return true;
-}
-`;
+"1" -> 'A'
+"2" -> 'B'
+...
+"25" -> 'Y'
+"26" -> 'Z'
 
-question7 = `
-Given an array, count the number of segments of strictly increasing numbers.
-Example:
-Input array: 1 2 3 1 2 5
-Increasing segments:
-1 2 3
-1 2 5
-Output:
-2
-1️⃣ C Language
-❌ Buggy Code
-#include <stdio.h>
-#include <stdbool.h>
-int main()
-{
-    int arr[] = {1,2,3,1,2,5};
-    int n = sizeof(arr);   // BUG 1
-    int count = 0;
-    bool increasing;
-    for(int i = 1; i <= n; i++)   // BUG 2  {
-        if(arr[i] >= arr[i-1])    // BUG 3   {
-            increasing = true;
-        }
-        else    {
-            if(increasing = true) // BUG 4
-                count++;
-        }
-    }
-    if(increasing)
-        count--;
-    printf("%d", count);
-}
-Test Case
-Array = [1 2 3 1 2 5]
-Expected Output
-2
-Output From Buggy Code
-5
-`;
+However, while decoding the message, you realize that there are many different ways you can decode the message because some codes are contained in other codes ("2" and "5" vs "25").
 
-question8 = `
-Problem: Longest Repeating Prefix Pattern
+For example, "11106" can be decoded into:
 
-Given a string S, determine the longest prefix pattern that repeats consecutively at least twice at the start of the string.
-If no repeating pattern exists, print "No Pattern".
-Input
-abcabcabcx
-Expected Output
-Pattern Length: 3
-Pattern: abc
-C Buggy Code
-#include <stdio.h>
-#include <string.h>
-#include <stdbool.h>
-int main()
-{
-    char s[100];
-    printf("Enter string: ");
-    scanf("%s", s);
-    int n = strlen(s);
-    int maxLen = 0;
-    for(int len = 1; len <= n/2; len++)      // BUG 1   {
-        bool match = true;
-        for(int i = 0; i <= len; i++)        // BUG 2     {
-            if(s[i] != s[i + len])           // BUG 3     {
-                match = false;
-            }
-        }
-        if(match)
-            maxLen = len;
-    }
-    if(maxLen){
-   char pattern[100];
-        strncpy(pattern, s, maxLen+1);       // BUG 4
-        pattern[maxLen+1] = '\0';
-        printf("Pattern Length: %d\n", maxLen);
-        printf("Pattern: %s\n", pattern);
-    }
-    else
-        printf("No Pattern\n");
-    return 0;
-}`;
+"AAJF" with the grouping (1, 1, 10, 6)
+"KJF" with the grouping (11, 10, 6)
+The grouping (1, 11, 06) is invalid because "06" is not a valid code (only "6" is valid).
+Note: there may be strings that are impossible to decode.
 
-question9 =`Problem: Detect Cycle in a Directed Graph
-You are given a directed graph represented using a HashMap (dictionary) where:
-Key → Node
-Value → List of nodes it points to (neighbors)
-Write a program to determine whether the graph contains a cycle.
-The program uses DFS with a HashMap to track visited nodes and recursion stack.
-However, the given code contains logical bugs.
-Your task is to identify and fix the bugs so that the program correctly detects cycles.
-📥 Input Format
-First line → integer n (number of nodes)
-Next n lines:
-First value → node
-Second value → number of neighbors k
-Next k values → neighbors
-Example input line format:
-Copy code
-node k neighbor1 neighbor2 ... neighbork
-📤 Output Format
-Print:
-Cycle Detected
-or
-No Cycle
-1️⃣ C PROGRAM
-Buggy C Code
-#include <stdio.h>
-#include <stdbool.h>
+Given a string s containing only digits, return the number of ways to decode it. If the entire string cannot be decoded in any valid way, return 0.
 
-bool dfs(int node, int n, int graph[n][n], bool visited[], bool stack[])
-{
-    visited[node] = true;
-    stack[node] = true;
+The test cases are generated so that the answer fits in a 32-bit integer.
 
-    for(int i = 0; i < n; i++)
-    {
-        if(graph[node][i])
-        {
-            if(!visited[i])
-                dfs(i, n, graph, visited, stack);   // BUG 1: result ignored
+Example 1:
+Input: s = "12"
+Output: 2
 
-            else if(stack[node])                    // BUG 2: wrong node checked
-                return true;
-        }
-    }
+Explanation:
+"12" could be decoded as "AB" (1 2) or "L" (12).
 
-    stack[node] = true;                             // BUG 3: should be false
-    return false;
-}
+Example 2:
+Input: s = "226"
+Output: 3
 
-bool hasCycle(int n, int graph[n][n])
-{
-    bool visited[n];
-    bool stack[n];
+Explanation:
+"226" could be decoded as "BZ" (2 26), "VF" (22 6), or "BBF" (2 2 6).
 
-    for(int i=0;i<n;i++)
-    {
-        visited[i] = false;
-        stack[i] = false;
-    }
+Example 3:
+Input: s = "06"
+Output: 0
 
-    for(int i=0;i<n;i++)
-    {
-        if(!visited[i])
-            dfs(i,n,graph,visited,stack);           // BUG 4: result ignored
-    }
+Explanation:
+"06" cannot be mapped to "F" because of the leading zero ("6" is different from "06"). In this case, the string is not a valid encoding, so return 0.
+Give test cases for this`;
 
-    return false;
-}
+question14 = `
+robber is targeting to rob houses from a street. Each house has security measures that alert the police when two adjacent houses are robbed. The houses are arranged in a circular manner, thus the first and last houses are adjacent to each other.
 
-int main()
-{
-    int n;
-    printf("Enter number of nodes: ");
-    scanf("%d",&n);
+Given an integer array money, where money[i] represents the amount of money that can be looted from the (i+1)th house. Return the maximum amount of money that the robber can loot without alerting the police.
 
-    int graph[n][n];
+Example 1
+Input: money = [2, 1, 4, 9]
+Output: 10
 
-    printf("Enter adjacency matrix:\n");
-    for(int i=0;i<n;i++)
-        for(int j=0;j<n;j++)
-            scanf("%d",&graph[i][j]);
+Explanation:
+[2, 1, 4, 9] The underlined houses would give the maximum loot.
 
-    if(hasCycle(n,graph))
-        printf("Cycle Detected");
-    else
-        printf("No Cycle");
-}
-`;
+Note that we cannot loot the 1st and 4th houses together.`;
 
-question10 = `Write a program to compute the power of a number using recursion.
-Given two integers:
-•	a → base
-•	b → exponent
-Compute: a^b
-1️⃣ C++ PROGRAM
-❌ Buggy Code (Infinite Recursion Bug)
-#include <iostream>
-using namespace std;
+question15 = `Given an integer n, return true if it is a power of two. Otherwise, return false.
+An integer n is a power of two, if there exists an integer x such that n == 2x.
 
-int power(int a,int b)
-{
-    if(b==0)
-        return 1;
+Example 1:
 
-    return a * power(a,b--);   // BUG
-}
+Input: n = 1
+Output: true
+Explanation: 20 = 1
+Example 2:
 
-int main()
-{
-    int a,b;
+Input: n = 16
+Output: true
+Explanation: 24 = 16
+Example 3:
 
-    cout<<"Enter base: ";
-    cin>>a;
-
-    cout<<"Enter exponent: ";
-    cin>>b;
-
-    cout<<"Result: "<<power(a,b);
-}
-`
+Input: n = 3
+Output: false`;
