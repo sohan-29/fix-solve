@@ -94,46 +94,43 @@ export default function Instructions() {
           <>
             <div className="instructions-section">
               <div className="rule-item">
-                <h3>Round 1 - Debugging Challenge</h3>
+                <h3>Anti-Cheat Measures</h3>
                 <ul>
-                  <li>You will be given a code with bugs</li>
-                  <li>Find and fix the bugs to make it work correctly</li>
-                  <li>Each wrong submission adds <strong>5 second penalty</strong></li>
-                  <li>Time starts when you begin the round</li>
-                  <li>A timer at the top shows your elapsed time</li>
+                  <li>Tab switching or minimizing the window will trigger a warning.</li>
+                  <li>A strict zero-tolerance policy is in effect: multiple warnings will result in an automatic <strong>lockout</strong> from the contest.</li>
+                  <li>Copying, pasting, and cutting text are strictly disabled in the code editor.</li>
+                  <li>Submitting code from a different machine or IP address than the one you started on will be blocked.</li>
                 </ul>
               </div>
 
               <div className="rule-item">
-                <h3>Round 2 - Coding Challenge</h3>
+                <h3>Round 1 & 2 Format</h3>
                 <ul>
-                  <li>Solve the problem from scratch</li>
-                  <li>Write efficient code considering time complexity</li>
-                  <li>Your code will be tested against hidden test cases</li>
-                  <li>Each wrong submission adds <strong>5 second penalty</strong></li>
-                  <li>You will see your completion time on the results page</li>
+                  <li><strong>Round 1 (Debugging):</strong> You will be given code with bugs. Find and fix them.</li>
+                  <li><strong>Round 2 (Coding):</strong> Solve the programming problems from scratch using your preferred language.</li>
+                  <li>You can navigate between multiple problems via the dropdown menu if available.</li>
+                  <li>A timer at the top shows your elapsed time. The round automatically ends when time is up.</li>
                 </ul>
               </div>
 
               <div className="rule-item">
                 <h3>Scoring & Penalties</h3>
                 <ul>
-                  <li><strong>Total Score</strong> = Time taken + (Wrong submissions × 5 seconds)</li>
-                  <li>More wrong submissions = higher penalty = lower chance of winning</li>
-                  <li>Lower total time means better ranking</li>
-                  <li>Leaderboard is sorted by total time (ascending)</li>
+                  <li><strong>Per Question:</strong> Visible tests grant 40% of the question's marks, while hidden server-side tests grant 60%.</li>
+                  <li><strong>Round Score:</strong> Sum of your highest marks for each problem - Penalty Marks + Optimal Bonus.</li>
+                  <li><strong>Penalty:</strong> Every <strong>3 wrong submissions</strong> in a round results in a <strong>-1 mark</strong> penalty.</li>
+                  <li><strong>Optimal Bonus:</strong> Getting a perfect score or a higher mark than your previous submission on a problem grants a <strong>+1 point</strong> Optimal Bonus.</li>
+                  <li><strong>Leaderboard:</strong> Ranked primarily by Total Marks (highest), then by Total Time (lowest), and finally by Optimal Points (highest).</li>
                 </ul>
               </div>
 
               <div className="rule-item">
                 <h3>Important Notes</h3>
                 <ul>
-                  <li>You can select your preferred programming language</li>
-                  <li>After completing Round 1, you'll see your time and can proceed to Round 2</li>
-                  <li>Make sure to test your code before submitting</li>
-                  <li>Use the <strong>Run</strong> button to test your code (no penalty)</li>
-                  <li>Use the <strong>Submit</strong> button when you're ready (may have penalty)</li>
-                  <li>Contact the admin if you face any technical issues</li>
+                  <li>Make sure to test your code before submitting!</li>
+                  <li>Use the <strong>Run</strong> button to test your code locally (does not consume time penalty or increase wrong submissions).</li>
+                  <li>Use the <strong>Submit</strong> button when you're fully ready (will verify hidden test cases and may accrue penalty marks if incorrect).</li>
+                  <li>Contact an admin if you get falsely locked out or face technical issues.</li>
                 </ul>
               </div>
             </div>

@@ -174,8 +174,8 @@ exports.reportViolation = async (req, res) => {
 
     user.tabSwitchCount += 1;
 
-    // Zero-tolerance policy: lock out immediately
-    if (user.tabSwitchCount >= 1) {
+    // 1 warning allowed: lock out on 2nd offence
+    if (user.tabSwitchCount >= 2) {
       user.isLockedOut = true;
     }
 

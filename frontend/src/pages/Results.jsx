@@ -61,8 +61,12 @@ export default function Results() {
               <li>Secondary: Total Time (lower is better)</li>
               <li>Tertiary: Optimal Points (higher is better)</li>
             </ul>
-            <p style={{ color: '#ff6b6b', fontSize: '12px' }}>
-              Marks: Visible tests (40%) + Hidden tests (60%) | Every 3 wrong submissions = -1 mark | Optimal code = +1 bonus
+            <p style={{ color: '#ff6b6b', fontSize: '13px', lineHeight: '1.5', marginBottom: '20px' }}>
+              <strong>Score Calculation:</strong><br/>
+              • <em>Question Score:</em> Visible tests (40%) + Hidden tests (60%)<br/>
+              • <em>Total Marks:</em> Sum of your best scores per question - Penalty + Optimal Bonus<br/>
+              • <em>Penalty:</em> Every 3 wrong submissions in a round = -1 mark<br/>
+              • <em>Optimal Bonus:</em> First correct or improved score for a problem = +1 bonus
             </p>
             
             <table className="results-table">
@@ -71,6 +75,7 @@ export default function Results() {
                   <th>Rank</th>
                   <th>Name</th>
                   <th>Marks</th>
+                  <th>Penalty</th>
                   <th>Round 1</th>
                   <th>Round 2</th>
                   <th>Time</th>
@@ -88,6 +93,9 @@ export default function Results() {
                     </td>
                     <td>{u.name}</td>
                     <td><strong>{u.totalScore?.toFixed(2) || '0.00'}</strong></td>
+                    <td style={{ color: '#ff6b6b' }}>
+                      {((u.round1NegativeMarks || 0) + (u.round2NegativeMarks || 0))}
+                    </td>
                     <td>{u.round1Score?.toFixed(2) || '0.00'}</td>
                     <td>{u.round2Score?.toFixed(2) || '0.00'}</td>
                     <td>{formatTime(u.totalTime)}</td>
