@@ -160,8 +160,8 @@ const createSubmission = async (req, res, next) => {
       
       if (problem && earnedMarks > 0) {
         // Check if this is the first correct submission for this problem
-        const bestSubmission = user[`round${round}BestSubmission`] || {};
-        const currentBest = bestSubmission[problemId] || 0;
+        const bestSubmission = user[`round${round}BestSubmission`];
+        const currentBest = bestSubmission.get ? (bestSubmission.get(problemId) || 0) : (bestSubmission[problemId] || 0);
         
         // If this is the first correct submission or better marks
         if (earnedMarks > currentBest) {
@@ -170,26 +170,46 @@ const createSubmission = async (req, res, next) => {
           optimalBonus = OPTIMAL_BONUS;
           
           // Update best submission
-          bestSubmission[problemId] = earnedMarks;
-          user[`round${round}BestSubmission`] = bestSubmission;
+          const probStr = String(problemId);
+          if (bestSubmission.set) {
+            bestSubmission.set(probStr, earnedMarks);
+          } else {
+            bestSubmission[probStr] = earnedMarks;
+          }
+          user.markModified(`round${round}BestSubmission`);
           
           // Track optimal submissions
-          const optimalSubmitted = user[`round${round}OptimalSubmitted`] || {};
-          if (!optimalSubmitted[problemId]) {
-            optimalSubmitted[problemId] = true;
-            user[`round${round}OptimalSubmitted`] = optimalSubmitted;
+          const optimalSubmitted = user[`round${round}OptimalSubmitted`];
+          const hasOptimal = optimalSubmitted.get ? optimalSubmitted.get(probStr) : optimalSubmitted[probStr];
+          if (!hasOptimal) {
+            if (optimalSubmitted.set) {
+              optimalSubmitted.set(probStr, true);
+            } else {
+              optimalSubmitted[probStr] = true;
+            }
+            user.markModified(`round${round}OptimalSubmitted`);
             user[`round${round}OptimalPoints`] = (user[`round${round}OptimalPoints`] || 0) + optimalBonus;
           }
         }
       }
 
       // --- 8. Update User Score ---
-      const previousRoundScore = user[`round${round}Score`] || 0;
-      const newScore = Math.max(previousRoundScore, earnedMarks - negativeMarks + optimalBonus);
-      user[`round${round}Score`] = newScore;
+      let sumBestSubmissions = 0;
+      const bestMap = user[`round${round}BestSubmission`];
+      if (bestMap && bestMap.forEach) {
+        bestMap.forEach((val) => {
+          sumBestSubmissions += val;
+        });
+      } else if (bestMap) {
+        Object.values(bestMap).forEach((val) => { sumBestSubmissions += val; });
+      }
+
+      // Calculate the final score for the round: sum of best problem marks - negative marks + optimal points
+      const newScore = sumBestSubmissions - (user[`round${round}NegativeMarks`] || 0) + (user[`round${round}OptimalPoints`] || 0);
+      user[`round${round}Score`] = parseFloat(newScore.toFixed(2));
 
       // Update total score
-      user.totalScore = (user.round1Score || 0) + (user.round2Score || 0);
+      user.totalScore = parseFloat(((user.round1Score || 0) + (user.round2Score || 0)).toFixed(2));
       
       // Update total optimal points
       user.totalOptimalPoints = (user.round1OptimalPoints || 0) + (user.round2OptimalPoints || 0);
@@ -202,9 +222,14 @@ const createSubmission = async (req, res, next) => {
       user.totalTime = (user.round1Time || 0) + (user.round2Time || 0);
 
       // --- 9. Save Submitted Code ---
-      const submittedCodeMap = user[`round${round}SubmittedCode`] || {};
-      submittedCodeMap[problemId] = code;
-      user[`round${round}SubmittedCode`] = submittedCodeMap;
+      const submittedCodeMap = user[`round${round}SubmittedCode`];
+      const probStr = String(problemId);
+      if (submittedCodeMap && submittedCodeMap.set) {
+        submittedCodeMap.set(probStr, code);
+      } else if (submittedCodeMap) {
+        submittedCodeMap[probStr] = code;
+      }
+      user.markModified(`round${round}SubmittedCode`);
 
       await user.save();
     }

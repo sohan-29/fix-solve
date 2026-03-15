@@ -80,6 +80,11 @@ export default function Round2() {
     try {
       const res = await axios.get(`/users/${userId}`);
       setIsLocked(res.data.isLockedOut || false);
+      if (res.data.isLockedOut) {
+        sessionStorage.setItem('isLocked', 'true');
+      } else {
+        sessionStorage.removeItem('isLocked');
+      }
       if (!res.data.isApproved && !res.data.isLockedOut) {
         navigate('/instructions');
       }
@@ -124,6 +129,8 @@ export default function Round2() {
       await checkLockStatus();
       if (sessionStorage.getItem('isLocked') === 'true') {
         setIsLocked(true);
+      } else {
+        setIsLocked(false);
       }
       // First fetch timer to check if it already exists
       const timerData = await fetchTimer();
@@ -322,10 +329,9 @@ export default function Round2() {
         const allSolved = problems.every(p => newSolvedProblems.has(p._id));
         if (allSolved) {
           const elapsed = timerDuration - elapsedTime;
-          const penalty = totalMistakes * 5;
-          const total = elapsed + penalty;
+          const total = elapsed;
           await axios.post('/contests/end', { name: userName, round: 2, timeTaken: total });
-          navigate('/round-complete', { state: { timeTaken: elapsed, mistakes: totalMistakes, penalty, round: 2 } });
+          navigate('/round-complete', { state: { timeTaken: elapsed, mistakes: totalMistakes, round: 2 } });
         } else {
           const nextIndex = problems.findIndex(p => !newSolvedProblems.has(p._id));
           if (nextIndex !== -1) {
@@ -437,6 +443,7 @@ export default function Round2() {
               readOnly: false,
               padding: { top: 10, bottom: 10 },
               fontFamily: "'Courier New', Courier, monospace",
+              scrollbar: { alwaysConsumeMouseWheel: false },
             }}
           />
         </div>

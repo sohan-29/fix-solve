@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import axios from '../api';
 
-const MAX_WARNINGS = 0; // Zero tolerance, immediate lockout
+const MAX_WARNINGS = 1; // 1 warning allowed, lockout on 2nd
 
 /**
  * useAntiCheat — Page Visibility API hook
@@ -29,6 +29,9 @@ export default function useAntiCheat(userId) {
                 if (res.data.isLockedOut) {
                     setIsLockedOut(true);
                     sessionStorage.setItem('isLocked', 'true');
+                } else {
+                    setIsLockedOut(false);
+                    sessionStorage.removeItem('isLocked');
                 }
                 if (res.data.tabSwitchCount) {
                     setWarnings(res.data.tabSwitchCount);
@@ -59,24 +62,36 @@ export default function useAntiCheat(userId) {
         }
     }, [userId]);
 
+    const timeoutRef = useRef(null);
+
     useEffect(() => {
         if (!userId) return;
 
         const handleVisibilityChange = () => {
-            // Only trigger when the page becomes hidden (user switched away)
-            // Also check if we're on a contest page (not admin, home, instructions, results, etc.)
             const currentPath = window.location.pathname;
             const isContestPage = currentPath === '/round1' || currentPath === '/round2';
 
-            // Only report violation if on contest pages
             if (document.hidden && isContestPage) {
-                reportViolation();
+                // Add a small delay to debounce rapid switches/false positives
+                timeoutRef.current = setTimeout(() => {
+                    if (document.hidden) {
+                        reportViolation();
+                    }
+                }, 500);
+            } else {
+                // If they came back before the timeout, clear it
+                if (timeoutRef.current) {
+                    clearTimeout(timeoutRef.current);
+                }
             }
         };
 
         document.addEventListener('visibilitychange', handleVisibilityChange);
         return () => {
             document.removeEventListener('visibilitychange', handleVisibilityChange);
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
         };
     }, [userId, reportViolation]);
 

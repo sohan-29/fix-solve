@@ -41,7 +41,7 @@ export default function RoundCompletion() {
           </div>
           <div className="stat-item">
             <span className="stat-label">Penalty</span>
-            <span className="stat-value penalty">-{penalty || 0}</span>
+            <span className="stat-value penalty">-{Math.floor((mistakes || 0) / 3)} marks</span>
           </div>
         </div>
 
@@ -51,7 +51,7 @@ export default function RoundCompletion() {
             <ul>
               <li><strong>Round 2</strong> is a coding challenge where you solve the problem from scratch</li>
               <li>You will write code to implement a solution based on the problem statement</li>
-              <li>The same penalty rules apply: -5 seconds for each wrong submission</li>
+              <li>The same penalty rules apply: <strong>-1 mark for every 3 wrong submissions</strong></li>
               <li>Test your code with the sample test cases before submitting</li>
               <li>Make sure to handle all edge cases mentioned in the problem</li>
             </ul>
