@@ -16,7 +16,7 @@ const problems = [
     constraints: 'None',
     sampleInput: '',
     sampleOutput: 'Hello',
-    starterCodeByLanguage: {
+    bugCodeByLanguage: {
       c: `#include <stdio.h>
 
 int main() {
@@ -74,7 +74,7 @@ if __name__ == "__main__":
     constraints: 'Must handle values larger than INT_MAX',
     sampleInput: '',
     sampleOutput: '2147483648',
-    starterCodeByLanguage: {
+    bugCodeByLanguage: {
       c: `#include <stdio.h>
 
 int main() {
@@ -132,7 +132,7 @@ if __name__ == "__main__":
     constraints: 'Must use pthreads. Lock ordering must be consistent.',
     sampleInput: '',
     sampleOutput: 'Task1 locked lock1\nTask1 locked lock2\nTask2 locked lock1\nTask2 locked lock2',
-    starterCodeByLanguage: {
+    bugCodeByLanguage: {
       c: `#include <stdio.h>
 #include <pthread.h>
 
@@ -193,7 +193,7 @@ int main() {
     constraints: 'String length <= 10000. Consider only alphanumeric characters.',
     sampleInput: 'A man, a plan, a canal: Panama',
     sampleOutput: 'true',
-    starterCodeByLanguage: {
+    bugCodeByLanguage: {
       c: `#include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -322,7 +322,7 @@ if __name__ == "__main__":
     constraints: '1 <= n <= 1000, -10000 <= arr[i] <= 10000',
     sampleInput: '6\n5 2 4 6 1 3',
     sampleOutput: '1 2 3 4 5 6',
-    starterCodeByLanguage: {
+    bugCodeByLanguage: {
       c: `#include <stdio.h>
 
 void insertionSort(int arr[], int n) {
@@ -452,7 +452,7 @@ if __name__ == "__main__":
     constraints: 'Strings contain only lowercase English letters. Length <= 10000.',
     sampleInput: 'anagram\nnagaram',
     sampleOutput: 'true',
-    starterCodeByLanguage: {
+    bugCodeByLanguage: {
       c: `#include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
@@ -592,7 +592,7 @@ if __name__ == "__main__":
     constraints: '1 <= n <= 1000',
     sampleInput: '6\n1 2 3 1 2 5',
     sampleOutput: '2',
-    starterCodeByLanguage: {
+    bugCodeByLanguage: {
       c: `#include <stdio.h>
 #include <stdbool.h>
 
@@ -736,7 +736,7 @@ if __name__ == "__main__":
     constraints: 'String length <= 100',
     sampleInput: 'abcabcabcx',
     sampleOutput: 'Pattern Length: 3\nPattern: abc',
-    starterCodeByLanguage: {
+    bugCodeByLanguage: {
       c: `#include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
@@ -892,7 +892,7 @@ if __name__ == "__main__":
     constraints: '1 <= n <= 100',
     sampleInput: '4\n0 1 0 0\n0 0 1 0\n0 0 0 1\n1 0 0 0',
     sampleOutput: 'Cycle Detected',
-    starterCodeByLanguage: {
+    bugCodeByLanguage: {
       c: `#include <stdio.h>
 #include <stdbool.h>
 
@@ -972,7 +972,7 @@ int main() {
     constraints: '0 <= a <= 10, 0 <= b <= 15',
     sampleInput: '2\n10',
     sampleOutput: '1024',
-    starterCodeByLanguage: {
+    bugCodeByLanguage: {
       c: `#include <stdio.h>
 
 int power(int a, int b) {
