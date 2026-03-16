@@ -139,7 +139,8 @@ exports.endRound = async (req, res) => {
     if (!user) return res.status(404).json({ error: "User not found" });
 
     user[`round${round}Time`] = timeTaken;
-    user.totalTime = user.round1Time + user.round2Time;
+    user[`round${round}Completed`] = true;
+    user.totalTime = (user.round1Time || 0) + (user.round2Time || 0);
     await user.save();
 
     res.json({ message: `Round ${round} ended`, user });

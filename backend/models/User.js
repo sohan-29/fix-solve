@@ -59,6 +59,9 @@ const UserSchema = new mongoose.Schema(
     tabSwitchCount: { type: Number, default: 0 },
     isLockedOut: { type: Boolean, default: false },
 
+    round1Completed: { type: Boolean, default: false },
+    round2Completed: { type: Boolean, default: false },
+
     isQualified: { type: Boolean, default: false },
     
     // --- Approval System ---

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from '../api';
 
-const ADMIN_PASSWORD = 'admin123';
+const ADMIN_PASSWORD = '@dM!n69';
 
 const LANGUAGES = [
   { id: 'c', name: 'C' },

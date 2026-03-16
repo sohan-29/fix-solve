@@ -186,6 +186,12 @@ export default function Round1() {
             sessionStorage.setItem('round1Remaining', remaining.toString());
             if (isExpired) {
               alert('Time is up! Round 1 has ended.');
+              axios.post('/contests/end', { 
+                name: localStorage.getItem('userName'), 
+                round: 1, 
+                timeTaken: timerDuration 
+              }).catch(e => console.error('Error ending round automatically:', e));
+              
               navigate('/round-complete', {
                 state: { timeTaken: timerDuration, round: 1 }
               });
