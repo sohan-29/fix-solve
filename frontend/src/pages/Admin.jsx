@@ -254,6 +254,17 @@ export default function Admin() {
     }
   };
 
+  const approveAllUsers = async () => {
+    if (!confirm('Are you sure you want to approve all unapproved users?')) return;
+    try {
+      await axios.post('/users/approve-all');
+      fetchData();
+      alert('All unapproved users approved!');
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   const unapproveUser = async (userId) => {
     try {
       await axios.post(`/users/${userId}/unapprove`);
@@ -408,7 +419,12 @@ export default function Admin() {
           <div className="approvals-section">
             <h2>User Approvals</h2>
             <div className="pending-approvals">
-              <h3>Pending Requests</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <h3 style={{ margin: 0 }}>Pending Requests</h3>
+                {pendingApprovals.length > 0 && (
+                  <button onClick={approveAllUsers} className="approve-btn">Approve All</button>
+                )}
+              </div>
               {pendingApprovals.length === 0 ? (
                 <p className="no-data">No pending requests</p>
               ) : (
@@ -436,7 +452,12 @@ export default function Admin() {
             </div>
             
             <div className="all-users">
-              <h3>All Users</h3>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <h3 style={{ margin: 0 }}>All Users</h3>
+                {users.some(u => !u.isApproved && !u.isLockedOut) && (
+                  <button onClick={approveAllUsers} className="approve-btn">Approve All</button>
+                )}
+              </div>
               <table>
                 <thead>
                   <tr>

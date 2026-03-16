@@ -7,7 +7,8 @@ const {
   checkApprovalStatus,
   approveUser,
   unapproveUser,
-  getPendingApprovals
+  getPendingApprovals,
+  approveAllPendingUsers
 } = require("../controllers/userController");
 const User = require("../models/User");
 const { getRemainingSeconds } = require("../utils/timerService");
@@ -18,6 +19,7 @@ router.get("/", getUsers);
 
 // Static routes MUST come before parameterized routes
 router.get("/pending-approvals", getPendingApprovals);
+router.post("/approve-all", approveAllPendingUsers);
 
 router.get("/:id", getUserById);
 

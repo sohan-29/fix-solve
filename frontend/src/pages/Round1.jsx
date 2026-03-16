@@ -110,11 +110,28 @@ export default function Round1() {
       const res = await axios.get(`/problems/round/1?language=${language}`);
       const problemsData = res.data;
       const problemsArray = Array.isArray(problemsData) ? problemsData : [problemsData];
-      setProblems(problemsArray);
+      
       if (problemsArray.length > 0) {
-        setProblem(problemsArray[0]);
-        const savedCode = await fetchSubmittedCode(problemsArray[0]._id);
-        setCode(savedCode || problemsArray[0].bugCode || problemsArray[0].starterCode || '');
+        let firstProblem = problemsArray[0];
+        let langToUse = language;
+        
+        if (firstProblem.supportedLanguages && firstProblem.supportedLanguages.length > 0 && !firstProblem.supportedLanguages.includes(langToUse)) {
+          langToUse = firstProblem.supportedLanguages[0];
+          setSelectedLanguage(langToUse);
+          const langRes = await axios.get(`/problems/round/1?language=${langToUse}`);
+          const langProblemsArray = Array.isArray(langRes.data) ? langRes.data : [langRes.data];
+          setProblems(langProblemsArray);
+          setProblem(langProblemsArray[0]);
+          const savedCode = await fetchSubmittedCode(langProblemsArray[0]._id);
+          setCode(savedCode || langProblemsArray[0].bugCode || langProblemsArray[0].starterCode || '');
+        } else {
+          setProblems(problemsArray);
+          setProblem(firstProblem);
+          const savedCode = await fetchSubmittedCode(firstProblem._id);
+          setCode(savedCode || firstProblem.bugCode || firstProblem.starterCode || '');
+        }
+      } else {
+        setProblems([]);
       }
     } catch (err) {
       console.error('Error fetching problems:', err);
@@ -205,6 +222,26 @@ export default function Round1() {
   const handleProblemSelect = async (index) => {
     const selectedProblem = problems[index];
     if (selectedProblem) {
+      if (selectedProblem.supportedLanguages && selectedProblem.supportedLanguages.length > 0 && !selectedProblem.supportedLanguages.includes(selectedLanguage)) {
+        const newLang = selectedProblem.supportedLanguages[0];
+        setSelectedLanguage(newLang);
+        try {
+          const res = await axios.get(`/problems/round/1?language=${newLang}`);
+          const problemsData = res.data;
+          const problemsArray = Array.isArray(problemsData) ? problemsData : [problemsData];
+          setProblems(problemsArray);
+          const newProblem = problemsArray[index];
+          setSelectedProblemIndex(index);
+          setProblem(newProblem);
+          const savedCode = await fetchSubmittedCode(newProblem._id);
+          setCode(savedCode || newProblem.bugCode || newProblem.starterCode || '');
+          setMistakes(0);
+          setSubmissionResult(null);
+        } catch (err) {
+          console.error('Error changing language for problem:', err);
+        }
+        return;
+      }
       setSelectedProblemIndex(index);
       setProblem(selectedProblem);
       const savedCode = await fetchSubmittedCode(selectedProblem._id);
@@ -485,7 +522,7 @@ export default function Round1() {
             value={selectedLanguage}
             onChange={handleLanguageChange}
           >
-            {LANGUAGES.map(lang => (
+            {LANGUAGES.filter(lang => !problem?.supportedLanguages || problem.supportedLanguages.includes(lang.id)).map(lang => (
               <option key={lang.id} value={lang.id}>
                 {lang.name}
               </option>

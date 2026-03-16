@@ -134,3 +134,16 @@ exports.getPendingApprovals = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch pending approvals" });
   }
 };
+
+// Approve all pending/unapproved users (admin only)
+exports.approveAllPendingUsers = async (req, res) => {
+  try {
+    const result = await User.updateMany(
+      { isApproved: false, isLockedOut: false },
+      { $set: { isApproved: true, approvedAt: new Date() } }
+    );
+    res.json({ message: "All unapproved users approved", count: result.modifiedCount });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to approve all users" });
+  }
+};

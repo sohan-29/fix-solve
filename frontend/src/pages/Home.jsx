@@ -49,7 +49,7 @@ export default function Home() {
           Start Contest
         </button>
 
-        <Link to="/admin" className="admin-link">Admin Panel</Link>
+        {/* <Link to="/admin" className="admin-link">Admin Panel</Link>/ */}
 
         {showPopup && (
           <div className="modal">
